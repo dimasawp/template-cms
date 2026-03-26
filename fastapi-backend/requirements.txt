@@ -1,0 +1,40 @@
+# ─── Core Framework ─────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+
+# ─── Database ───────────────────────────────────────────────────────
+sqlalchemy
+pymysql
+alembic
+
+# ─── Config & Validation ───────────────────────────────────────────
+python-dotenv
+pydantic
+pydantic-settings
+
+# ─── Auth & Security ───────────────────────────────────────────────
+passlib[bcrypt]
+bcrypt
+python-jose[cryptography]
+python-multipart
+slowapi                    # Rate limiter
+
+# ─── Email ──────────────────────────────────────────────────────────
+aiosmtplib
+jinja2
+
+# ─── Export Utilities ───────────────────────────────────────────────
+openpyxl                   # Excel export
+weasyprint                 # PDF export (atau xhtml2pdf sebagai alternatif ringan)
+
+# ─── Background Tasks ──────────────────────────────────────────────
+apscheduler
+
+# ─── WebSocket ──────────────────────────────────────────────────────
+# (WebSocket sudah built-in di FastAPI/Starlette)
+
+# ─── Testing ────────────────────────────────────────────────────────
+pytest
+pytest-asyncio
+httpx
+faker
