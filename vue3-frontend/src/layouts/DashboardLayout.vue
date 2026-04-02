@@ -1,17 +1,26 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
+import { settingService } from '@/services/settingService'
+import { notificationService } from '@/services/notificationService'
 import Toaster from '@/components/ui/Toaster.vue'
 import {
-  LayoutDashboard, Users, Shield, Bell, Menu, X, LogOut, Sun, Moon
+  LayoutDashboard, Users, Shield, Bell, Menu, X, LogOut, Sun, Moon, Settings, Monitor, History, ChevronDown
 } from 'lucide-vue-next'
+import Avatar from '@/components/ui/Avatar.vue'
+import { useConfirmation } from '@/composables/useConfirmation'
+import { useRealtime } from '@/composables/useRealtime'
+import MaintenanceBanner from '@/components/common/MaintenanceBanner.vue'
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const { isDark, toggleTheme } = useTheme()
+const confirm = useConfirmation()
+const { status: maintenanceStatus } = useRealtime()
 
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
@@ -20,6 +29,9 @@ const menuItems = computed(() => [
   { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard', permission: null },
   { name: 'Users', icon: Users, route: '/users', permission: 'users.view' },
   { name: 'Roles', icon: Shield, route: '/roles', permission: 'roles.view' },
+  { name: 'Global Settings', icon: Settings, route: '/global-settings', permission: 'settings.view' },
+  { name: 'Active Sessions', icon: Monitor, route: '/active-sessions', permission: 'sessions.view' },
+  { name: 'Audit Trail', icon: History, route: '/settings/audit-logs', permission: 'audit.view' },
 ])
 
 const visibleMenu = computed(() =>
@@ -31,9 +43,35 @@ function isActive(path: string) {
 }
 
 async function handleLogout() {
-  await auth.logout()
-  router.push('/login')
+  const ok = await confirm.confirm({
+    title: 'Konfirmasi Logout',
+    message: 'Apakah Anda yakin ingin keluar dari aplikasi?',
+    variant: 'destructive'
+  })
+  
+  if (ok) {
+    await auth.logout()
+    router.push('/login')
+  }
 }
+
+const siteName = ref('CMS Template')
+const unreadCount = ref(0)
+
+onMounted(async () => {
+  // Fetch Site Name
+  try {
+    const { data: res } = await settingService.getPublic()
+    const settings = res.data || {}
+    if (settings.site_name) siteName.value = settings.site_name
+  } catch { /* ignore */ }
+
+  // Fetch Notification Badge
+  try {
+    const { data: res } = await notificationService.badge()
+    unreadCount.value = res.data.unread_count
+  } catch { /* ignore */ }
+})
 </script>
 
 <template>
@@ -47,7 +85,7 @@ async function handleLogout() {
     >
       <!-- Brand -->
       <div class="flex h-16 items-center justify-between px-4 border-b">
-        <span v-if="sidebarOpen" class="text-lg font-bold text-primary">CMS Template</span>
+        <span v-if="sidebarOpen" class="text-lg font-bold text-primary truncate">{{ siteName }}</span>
         <button @click="sidebarOpen = !sidebarOpen" class="p-1 rounded hover:bg-accent">
           <Menu class="h-5 w-5" />
         </button>
@@ -80,7 +118,7 @@ async function handleLogout() {
       <Transition name="slide">
         <aside v-if="mobileSidebarOpen" class="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r shadow-xl lg:hidden">
           <div class="flex h-16 items-center justify-between px-4 border-b">
-            <span class="text-lg font-bold text-primary">CMS Template</span>
+            <span class="text-lg font-bold text-primary truncate">{{ siteName }}</span>
             <button @click="mobileSidebarOpen = false"><X class="h-5 w-5" /></button>
           </div>
           <nav class="py-4 px-2 space-y-1">
@@ -117,23 +155,61 @@ async function handleLogout() {
             <Moon v-else class="h-5 w-5" />
           </button>
 
-          <!-- Notification bell (placeholder) -->
-          <button class="relative p-2 rounded-md hover:bg-accent">
+          <!-- Notification bell -->
+          <router-link 
+            to="/notifications" 
+            class="relative p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+            title="Pemberitahuan"
+          >
             <Bell class="h-5 w-5" />
-          </button>
+            <span 
+              v-if="unreadCount > 0" 
+              class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-sm"
+            >
+              {{ unreadCount > 9 ? '9+' : unreadCount }}
+            </span>
+          </router-link>
 
           <!-- User menu -->
-          <div class="flex items-center gap-2 ml-2">
-            <div class="hidden sm:block text-right">
-              <p class="text-sm font-medium">{{ auth.user?.full_name || auth.username }}</p>
-              <p class="text-xs text-muted-foreground capitalize">{{ auth.userRole }}</p>
-            </div>
-            <button @click="handleLogout" class="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground" title="Logout">
-              <LogOut class="h-5 w-5" />
+          <div class="flex items-center gap-1 ml-2 border-l pl-4">
+            <router-link 
+              to="/profile" 
+              class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-accent transition-all group"
+            >
+              <div class="hidden sm:block text-right">
+                <p class="text-sm font-bold leading-tight group-hover:text-primary transition-colors">{{ auth.user?.full_name || auth.username }}</p>
+                <p class="text-[10px] text-muted-foreground capitalize">{{ auth.userRole }}</p>
+              </div>
+              <div class="relative shrink-0">
+                <Avatar 
+                  :src="auth.user?.avatar" 
+                  :name="auth.user?.full_name || auth.username" 
+                  size="sm" 
+                  class="border-2 border-transparent group-hover:border-primary/20 transition-all"
+                />
+                <div class="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 border shadow-sm lg:hidden sm:block">
+                  <ChevronDown class="h-2 w-2 text-muted-foreground" />
+                </div>
+              </div>
+              <ChevronDown class="hidden lg:block h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </router-link>
+            
+            <button 
+              @click="handleLogout" 
+              class="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors ml-1" 
+              title="Logout"
+            >
+              <LogOut class="h-4 w-4" />
             </button>
           </div>
         </div>
       </header>
+
+      <!-- Maintenance Alert Banner -->
+      <MaintenanceBanner 
+        v-if="maintenanceStatus.maintenance_mode === 'true' && maintenanceStatus.maintenance_scheduled_at"
+        :scheduled-at="maintenanceStatus.maintenance_scheduled_at" 
+      />
 
       <!-- Page content -->
       <main class="flex flex-1 flex-col overflow-hidden bg-muted/10">
@@ -143,12 +219,20 @@ async function handleLogout() {
         
         <!-- Footer -->
         <footer class="py-4 ps-4 text-start text-sm text-muted-foreground border-t bg-card/60">
-          &copy; {{ new Date().getFullYear() }} CMS Template. Version 1.0.0
+          &copy; {{ new Date().getFullYear() }} CMS Template. Version 1.1.0
         </footer>
       </main>
     </div>
   </div>
 
+  <ConfirmationDialog 
+    :open="confirm.isOpen.value"
+    :title="confirm.title.value"
+    :message="confirm.message.value"
+    :variant="confirm.variant.value"
+    @confirm="confirm.onConfirm"
+    @cancel="confirm.onCancel"
+  />
   <Toaster />
 </template>
 

@@ -6,6 +6,7 @@ export const userService = {
   create:    (data: Record<string, unknown>)    => api.post('/users', data),
   update:    (id: number, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
   delete:    (id: number)                       => api.delete(`/users/${id}`),
+  getRoles:  ()                                 => api.get('/roles'),
   resetPassword: (id: number, data: { new_password: string }) => api.post(`/users/${id}/reset-password`, data),
   uploadAvatar:  (id: number, file: File) => {
     const fd = new FormData()

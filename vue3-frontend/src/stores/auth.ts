@@ -10,6 +10,7 @@ export interface AuthUser {
   role_name: string
   permissions: string[]
   is_active: boolean
+  avatar: string | null
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -26,6 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
   const permissions = computed(() => user.value?.permissions || [])
 
   function hasPermission(perm: string): boolean {
+    if (userRole.value === 'super_admin') return true
     return permissions.value.includes(perm)
   }
 

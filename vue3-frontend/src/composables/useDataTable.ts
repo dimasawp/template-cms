@@ -1,4 +1,4 @@
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 export interface SortOption {
   field: string
@@ -29,7 +29,9 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const search = ref('')
-  const filters = reactive<Record<string, unknown>>({})
+  const filters = reactive<Record<string, any>>({
+    search: ''
+  })
 
   const pagination = reactive({
     page: 1,
@@ -90,12 +92,32 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
     fetchItems()
   }
 
+  const setSortDirection = (direction: 'asc' | 'desc') => {
+    sort.direction = direction
+    pagination.page = 1
+    fetchItems()
+  }
+
+  // Debounced search logic for filters
+  let debounceTimer: ReturnType<typeof setTimeout>
+  watch(
+    () => ({ ...filters }),
+    () => {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        pagination.page = 1
+        fetchItems()
+      }, 500) // 500ms debounce
+    },
+    { deep: true }
+  )
+
   // Initial fetch
   fetchItems()
 
   return {
     items, isLoading, error, search, filters,
     pagination, sort,
-    fetchItems, goToPage, setSearch, setSortField,
+    fetchItems, goToPage, setSearch, setSortField, setSortDirection,
   }
 }

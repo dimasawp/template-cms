@@ -45,6 +45,12 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+
+    // ── Maintenance Mode Check — redirect on 503 ───────────────
+    if (error.response?.status === 503) {
+      window.location.href = '/maintenance'
+    }
+
     return Promise.reject(error)
   },
 )
