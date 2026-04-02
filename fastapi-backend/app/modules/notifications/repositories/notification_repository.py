@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from app.modules._base.repository import BaseRepository
 from app.modules.notifications.models.notification_model import Notification
@@ -11,7 +12,7 @@ class NotificationRepository(BaseRepository):
     def get_user_notifications(cls, db: Session, user_id: int, *, page=1, per_page=20, unread_only=False):
         query = db.query(Notification).filter(Notification.user_id == user_id)
         if unread_only:
-            query = query.filter(Notification.is_read == False)
+            query = query.filter(Notification.read_at.is_(None))
         total = query.count()
         items = (
             query.order_by(Notification.created_at.desc())
@@ -23,7 +24,7 @@ class NotificationRepository(BaseRepository):
     def get_unread_count(cls, db: Session, user_id: int) -> int:
         return (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, Notification.is_read == False)
+            .filter(Notification.user_id == user_id, Notification.read_at.is_(None))
             .count()
         )
 
@@ -36,7 +37,7 @@ class NotificationRepository(BaseRepository):
         )
         if not notif:
             return False
-        notif.is_read = True
+        notif.read_at = datetime.now(timezone.utc)
         db.commit()
         return True
 
@@ -44,8 +45,8 @@ class NotificationRepository(BaseRepository):
     def mark_all_read(cls, db: Session, user_id: int) -> int:
         count = (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, Notification.is_read == False)
-            .update({"is_read": True})
+            .filter(Notification.user_id == user_id, Notification.read_at.is_(None))
+            .update({"read_at": datetime.now(timezone.utc)})
         )
         db.commit()
         return count

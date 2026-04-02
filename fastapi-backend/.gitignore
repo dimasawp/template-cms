@@ -10,5 +10,11 @@ build/
 htmlcov/
 .pytest_cache/
 logs/
-storage/uploads/
+.vscode/
+.idea/
 *.db
+test.db
+
+# Storage
+storage/*
+!storage/**/.gitkeep

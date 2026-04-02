@@ -34,7 +34,7 @@ async def get_all_notifications(
             "title": n.title,
             "message": n.message,
             "type": n.type,
-            "is_read": n.is_read,
+            "read_at": n.read_at.isoformat() if n.read_at else None,
             "link": n.link,
             "created_at": n.created_at.isoformat() if n.created_at else None,
         }

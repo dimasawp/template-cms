@@ -5,7 +5,7 @@ File upload / storage helper.
 import os
 import uuid
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import UploadFile, HTTPException, status
 from app.core.config import settings
@@ -34,7 +34,7 @@ def save_file(
 ) -> str:
     validate_file(file)
     ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename else "bin"
-    filename = custom_name or f"{uuid.uuid4().hex}_{int(datetime.utcnow().timestamp())}.{ext}"
+    filename = custom_name or f"{uuid.uuid4().hex}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
     dest_dir = _ensure_upload_dir(sub_dir)
     dest = os.path.join(dest_dir, filename)
 

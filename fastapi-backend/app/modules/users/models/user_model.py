@@ -22,6 +22,8 @@ class User(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+    last_login_at = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
 
     role = relationship("Role", back_populates="users")
 

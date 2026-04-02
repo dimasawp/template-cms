@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.modules.roles.models.role_model import Role, Permission
 from app.modules.users.models.user_model import User
+from app.modules.settings.models.setting_model import Setting
 from app.core.security import get_password_hash
 
 
@@ -31,6 +32,8 @@ def seed_permissions(db: Session):
         {"id": 10, "name": "notifications.view", "description": "View notifications"},
         {"id": 11, "name": "settings.view",   "description": "View settings"},
         {"id": 12, "name": "settings.update", "description": "Update settings"},
+        {"id": 13, "name": "sessions.view",   "description": "View active sessions"},
+        {"id": 14, "name": "sessions.delete", "description": "Revoke sessions (kick)"},
     ]
     for data in permissions:
         if not db.query(Permission).filter_by(name=data["name"]).first():
@@ -43,11 +46,17 @@ def seed_role_permissions(db: Session):
 
     sa = db.query(Role).filter_by(name="super_admin").first()
     if sa:
+        sa.permissions = [] # Clear existing
+        db.flush()
         sa.permissions = all_perms
+        print("[OK] Super Admin permissions synced")
 
     admin = db.query(Role).filter_by(name="admin").first()
     if admin:
-        admin.permissions = [p for p in all_perms if p.name not in ("roles.delete", "settings.update")]
+        admin.permissions = [
+            p for p in all_perms 
+            if p.name not in ("roles.delete", "settings.update")
+        ]
 
     editor = db.query(Role).filter_by(name="editor").first()
     if editor:
@@ -58,14 +67,15 @@ def seed_role_permissions(db: Session):
 
     viewer = db.query(Role).filter_by(name="viewer").first()
     if viewer:
+        # Now viewer gets audit.view, settings.view, sessions.view, etc.
         viewer.permissions = [p for p in all_perms if p.name.endswith(".view")]
 
     print("[OK] Role-permissions assigned")
 
 
 def seed_super_admin(db: Session):
-    if db.query(User).filter_by(username="superadmin").first():
-        print("[INFO] Super-admin already exists")
+    if db.query(User).filter((User.username == "superadmin") | (User.email == "admin@example.com")).first():
+        print("[INFO] Super-admin or someone with admin email already exists")
         return
 
     role = db.query(Role).filter_by(name="super_admin").first()
@@ -81,12 +91,25 @@ def seed_super_admin(db: Session):
     print("[OK] Super-admin created (password: admin123)")
 
 
+def seed_settings(db: Session):
+    settings_data = [
+        {"setting_key": "app_name", "setting_value": "CMS Template", "description": "Application Name"},
+        {"setting_key": "maintenance_mode", "setting_value": "false", "description": "Maintenance Mode Toggle"},
+        {"setting_key": "registration_enabled", "setting_value": "true", "description": "Allow user self-registration"},
+    ]
+    for data in settings_data:
+        if not db.query(Setting).filter_by(setting_key=data["setting_key"]).first():
+            db.add(Setting(**data))
+    print("[OK] Settings seeded")
+
+
 def run():
     from app.core.database import SessionLocal, engine, Base
     from app.core.config import settings
     import app.modules.users.models.user_model          # noqa: F401
     import app.modules.roles.models.role_model           # noqa: F401
     import app.modules.notifications.models.notification_model  # noqa: F401
+    import app.modules.media.models.media_model                # noqa: F401
 
     print(f"[SEED] Running seeds (ENV={settings.ENV})")
     print("[SEED] Creating tables...")
@@ -100,6 +123,7 @@ def run():
         db.flush()
         seed_role_permissions(db)
         seed_super_admin(db)
+        seed_settings(db)
         db.commit()
         print("[OK] Seeding completed")
     except Exception as e:

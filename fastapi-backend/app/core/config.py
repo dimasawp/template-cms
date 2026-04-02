@@ -5,9 +5,10 @@ from typing import List
 class Settings(BaseSettings):
     # ─── Application ────────────────────────────────────────────────
     APP_NAME: str = "CMS Template API"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "1.1.0"
     ENV: str = "development"  # development | staging | production
     DEBUG: bool = False
+    ENABLE_WEBSOCKETS: bool = True
 
     # ─── Database ───────────────────────────────────────────────────
     DB_HOST: str = "localhost"
@@ -26,6 +27,11 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 10485760  # 10 MB
     ALLOWED_EXTENSIONS: str = "jpg,jpeg,png,gif,webp,pdf,xlsx,docx,csv"
     UPLOAD_DIR: str = "storage/uploads"
+    
+    # storage_mode: 'local_project' | 'local_system' | 'cloud'
+    STORAGE_MODE: str = "local_project"
+    # system_storage_path: used when STORAGE_MODE is 'local_system' (absolute path)
+    SYSTEM_STORAGE_PATH: str = "C:/CMS_STORAGE"
 
     # ─── Email (SMTP) ──────────────────────────────────────────────
     SMTP_HOST: str = "localhost"

@@ -4,7 +4,6 @@ from fastapi import Request
 
 from app.modules._base.service import BaseService
 from app.modules.notifications.repositories.notification_repository import NotificationRepository
-from app.modules.notifications.models.notification_model import AuditLog
 from app.modules.users.models.user_model import User
 
 
@@ -27,27 +26,3 @@ class NotificationService(BaseService):
     def mark_all_read(cls, db: Session, user_id: int) -> int:
         return NotificationRepository.mark_all_read(db, user_id)
 
-
-class AuditService:
-
-    @staticmethod
-    def log_action(
-        db: Session,
-        *,
-        action: str,
-        resource: str,
-        resource_id: Optional[str] = None,
-        detail: Optional[str] = None,
-        actor: User,
-        request: Optional[Request] = None,
-    ):
-        ip = request.client.host if request and request.client else None
-        entry = AuditLog(
-            action=action,
-            resource=resource,
-            resource_id=str(resource_id) if resource_id else None,
-            detail=detail,
-            actor_id=actor.id,
-            ip_address=ip,
-        )
-        db.add(entry)

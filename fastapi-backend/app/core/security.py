@@ -56,3 +56,17 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
         return payload
     except JWTError:
         return None
+
+
+def decode_token_lenient(token: str) -> Optional[Dict[str, Any]]:
+    """Decode JWT token ignoring expiry. Useful for logout of expired sessions."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            options={"verify_exp": False}
+        )
+        return payload
+    except JWTError:
+        return None
