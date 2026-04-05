@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from main import app
 from app.core.database import Base, get_db
-from app.seeds.seed import seed_roles, seed_permissions, seed_role_permissions, seed_super_admin, seed_settings
+from app.seeds.seed import seed_roles, seed_permissions, seed_role_permissions, seed_users, seed_settings
 
 # Use SQLite in-memory for fast testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -34,7 +34,7 @@ def db_engine():
         seed_permissions(db)
         db.flush()
         seed_role_permissions(db)
-        seed_super_admin(db)
+        seed_users(db)
         seed_settings(db)
         db.commit()
     finally:

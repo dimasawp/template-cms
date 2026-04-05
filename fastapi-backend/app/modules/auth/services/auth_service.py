@@ -45,10 +45,10 @@ class AuthService:
         if db.query(User).filter(User.email == email).first():
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        # Get viewer role (ID: 4 as per seed)
-        role = db.query(Role).filter(Role.name == "viewer").first()
+        # Default role for self-registered users (admin role)
+        role = db.query(Role).filter(Role.name == "admin").first()
         if not role:
-            raise HTTPException(status_code=500, detail="Default registration role 'viewer' not found")
+            raise HTTPException(status_code=500, detail="Default registration role 'admin' not found")
 
         new_user = User(
             username=username,

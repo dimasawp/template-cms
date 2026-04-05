@@ -8,7 +8,7 @@ async def test_get_roles_as_admin(async_client: AsyncClient, admin_token_headers
     data = response.json()
     assert data["status"] == "success"
     assert "items" in data["data"]
-    assert len(data["data"]["items"]) >= 4 # We seeded 4 roles
+    assert len(data["data"]["items"]) >= 2  # super_admin + admin
 
 @pytest.mark.asyncio
 async def test_get_permissions_as_admin(async_client: AsyncClient, admin_token_headers):
@@ -23,17 +23,17 @@ async def test_create_role_as_admin(async_client: AsyncClient, admin_token_heade
     payload = {
         "name": "moderator",
         "description": "Content Moderator",
-        "permission_ids": [1, 5, 9] # Just some permission IDs
+        "permission_ids": [1, 5, 9]
     }
     response = await async_client.post("/api/v1/roles", json=payload, headers=admin_token_headers)
-    assert response.status_code == 200 # Defaults to 200 from fast API dict response
+    assert response.status_code == 200
     data = response.json()
     assert data["data"]["name"] == "moderator"
 
 @pytest.mark.asyncio
 async def test_create_role_duplicate(async_client: AsyncClient, admin_token_headers):
     payload = {
-        "name": "admin", # Already exists from seed
+        "name": "admin",  # Already exists from seed
         "description": "Duplicate admin",
         "permission_ids": []
     }
@@ -41,11 +41,12 @@ async def test_create_role_duplicate(async_client: AsyncClient, admin_token_head
     assert response.status_code == 409
 
 @pytest.mark.asyncio
-async def test_create_roles_denied_for_normal_user(async_client: AsyncClient, normal_user_token_headers):
+async def test_create_role_denied_without_auth(async_client: AsyncClient):
+    """Unauthenticated request must be rejected."""
     payload = {
         "name": "hacker_role",
         "description": "Hacker role",
         "permission_ids": []
     }
-    response = await async_client.post("/api/v1/roles", json=payload, headers=normal_user_token_headers)
-    assert response.status_code == 403
+    response = await async_client.post("/api/v1/roles", json=payload)
+    assert response.status_code == 401
