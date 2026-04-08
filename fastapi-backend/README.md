@@ -263,3 +263,28 @@ Configured via `STORAGE_MODE` in `.env`:
 4. The auto-discovery in `app/modules/__init__.py` will automatically register it
 
 No manual registration in `main.py` required.
+
+## 🛡 Soft Delete
+
+Integrated via `BaseRepository`. All key models (Users, Roles, Permissions, Media, Settings) include a `deleted_at` column.
+
+- **Standard Query**: Automatically filters out records where `deleted_at` is not null.
+- **Hard Delete**: Use the `hard_delete(id)` method in the repository to permanently remove data.
+- **Filtering**: `AuditLog` is excluded from soft delete to ensure data integrity.
+
+## 📁 Media Storage Organization
+
+Files are automatically organized by date to prevent folder congestion and improve retrieval efficiency:
+
+- **Path Format**: `storage/uploads/YYYY/MM/filename.ext`
+- **Example**: `storage/uploads/2024/04/image_123.webp`
+- **Visibility**: Directories are created on-the-fly when the first file of a new month is uploaded.
+
+## 🏷 Version Management
+
+This system's version (Current: `1.2.0`) is controlled centrally:
+1.  Set the version in `app/core/config.py` (`APP_VERSION`).
+2.  It is exposed via `/api/v1/settings` to the frontend.
+3.  Optional: Override via `APP_VERSION` in your `.env` file.
+
+

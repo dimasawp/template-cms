@@ -3,7 +3,7 @@ import { AlertTriangle, AlertCircle, Info } from 'lucide-vue-next'
 import Button from './Button.vue'
 import Dialog from './Dialog.vue'
 
-const props = defineProps<{
+defineProps<{
   open: boolean
   title: string
   message: string
@@ -13,7 +13,7 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
-const emit = defineEmits<{ confirm: []; cancel: [] }>()
+defineEmits<{ confirm: []; cancel: [] }>()
 
 const variantIcons = {
   default: Info,

@@ -6,9 +6,9 @@ Reusable full-stack CMS boilerplate built with **FastAPI** (Python) and **Vue 3*
 
 ```
 template-cms/
-├── fastapi-backend/       # REST API, Auth, RBAC, Audit, Media
-├── vue3-frontend/         # SPA Admin Dashboard
-└── storage/               # Shared file uploads (gitignored)
+├── fastapi-backend/       # REST API (RBAC, Audit, Media, Storage)
+│   └── storage/           # file uploads (gitignored structure)
+└── vue3-frontend/         # SPA Admin Dashboard (Pinia Settings Store)
 ```
 
 ## 🚀 Quick Start
@@ -62,20 +62,24 @@ npm run dev                 # App runs at http://localhost:5173
 - **Authorization**: Role-Based Access Control (RBAC) with granular permissions
 - **User Management**: CRUD users, role assignment, profile editing
 - **Role & Permission Management**: Dynamic roles with permission matrix
-- **Audit Trail**: Tracks all user actions (create, update, delete)
-- **Media Upload**: Multi-storage support (local project, local system, cloud-ready)
-- **Notifications**: Real-time via WebSocket, in-app notification center
-- **Global Settings**: App name, maintenance mode, registration toggle
-- **Active Sessions**: View and revoke user login sessions
-- **Maintenance Mode**: Toggle system-wide with admin bypass
-- **Dark/Light Theme**: Persistent matte-dark design system
-- **Component Gallery**: Built-in UI documentation page at `/components`
+- **Audit Trail**: Tracks user actions; maintains immutable logs (hard delete only)
+- **Media Upload**: Auto-organized by Year/Month (`YYYY/MM/`); multi-storage support
+- **Soft Delete**: Integrated across key modules (Roles, Users, Media, Settings)
+- **Real-time Notifications**: Hybrid WebSocket + Fallback Polling for high availability
+- **Global Settings**: Site name and maintenance reactivity via central Pinia store
 
 ## 📖 Documentation
 
 - **Backend README**: [`fastapi-backend/README.md`](./fastapi-backend/README.md)
 - **Frontend README**: [`vue3-frontend/README.md`](./vue3-frontend/README.md)
 - **API Docs (Swagger)**: `http://localhost:8000/docs` (after starting backend)
+
+## 🏷 Version Management
+
+The system uses a **Centralized Versioning** strategy:
+- **Source of Truth**: The version is defined in `fastapi-backend/app/core/config.py` (`APP_VERSION`).
+- **Syncing**: The backend automatically exposes this version via the Public Settings API.
+- **Frontend**: The Dashboard footer and system metadata dynamically read from the backend, so you only need to update the version in one file.
 
 ## 📝 License
 

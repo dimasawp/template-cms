@@ -15,6 +15,7 @@ class Notification(Base):
     read_at = Column(DateTime, nullable=True)
     link = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    deleted_at = Column(DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Notification {self.id} for user {self.user_id}>"

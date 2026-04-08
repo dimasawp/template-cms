@@ -29,7 +29,10 @@ class BaseRepository:
 
     @classmethod
     def get_by_id(cls, db: Session, record_id: int) -> Optional[Any]:
-        return db.query(cls.model).filter(cls.model.id == record_id).first()
+        query = db.query(cls.model).filter(cls.model.id == record_id)
+        if hasattr(cls.model, "deleted_at"):
+            query = query.filter(cls.model.deleted_at == None)
+        return query.first()
 
     @classmethod
     def get_all(
@@ -45,6 +48,8 @@ class BaseRepository:
     ):
         query = db.query(cls.model)
 
+        if hasattr(cls.model, "deleted_at"):
+            query = query.filter(cls.model.deleted_at == None)
         if filters:
             for col, val in filters.items():
                 if val is not None and hasattr(cls.model, col):
@@ -85,6 +90,21 @@ class BaseRepository:
     @classmethod
     def delete(cls, db: Session, record_id: int) -> bool:
         obj = cls.get_by_id(db, record_id)
+        if obj is None:
+            return False
+        
+        if hasattr(obj, "deleted_at"):
+            from datetime import datetime
+            obj.deleted_at = datetime.utcnow()
+        else:
+            db.delete(obj)
+            
+        db.commit()
+        return True
+
+    @classmethod
+    def hard_delete(cls, db: Session, record_id: int) -> bool:
+        obj = db.query(cls.model).filter(cls.model.id == record_id).first()
         if obj is None:
             return False
         db.delete(obj)

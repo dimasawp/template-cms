@@ -35,7 +35,12 @@ def save_file(
     validate_file(file)
     ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename else "bin"
     filename = custom_name or f"{uuid.uuid4().hex}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
-    dest_dir = _ensure_upload_dir(sub_dir)
+    
+    # Add year/month to sub_dir
+    date_path = datetime.now().strftime("%Y/%m")
+    full_sub_dir = os.path.join(sub_dir, date_path) if sub_dir else date_path
+    
+    dest_dir = _ensure_upload_dir(full_sub_dir)
     dest = os.path.join(dest_dir, filename)
 
     with open(dest, "wb") as buf:

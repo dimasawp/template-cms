@@ -19,6 +19,7 @@ class Role(Base):
     name = Column(String(50), unique=True, nullable=False, index=True)
     description = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     users = relationship("User", back_populates="role")
     permissions = relationship("Permission", secondary="role_permissions", back_populates="roles")
@@ -34,6 +35,7 @@ class Permission(Base):
     name = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     roles = relationship("Role", secondary="role_permissions", back_populates="permissions")
 

@@ -11,7 +11,7 @@ defineProps<{
   searchModelValue: string
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   'update:searchModelValue': [value: string]
   refresh: []
   add: []

@@ -16,6 +16,7 @@ class Setting(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+    deleted_at = Column(DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Setting {self.setting_key}={self.setting_value}>"

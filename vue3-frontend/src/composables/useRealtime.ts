@@ -1,5 +1,6 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { settingService } from '@/services/settingService'
+import { useSettingsStore } from '@/stores/settings'
 
 export interface MaintenanceStatus {
   maintenance_mode: string
@@ -17,6 +18,8 @@ export function useRealtime() {
   let pollingInterval: any = null
   let reconnectTimeout: any = null
 
+  const settingsStore = useSettingsStore()
+
   const fetchStatus = async () => {
     try {
       const { data: res } = await settingService.getPublic()
@@ -28,6 +31,13 @@ export function useRealtime() {
   }
 
   const connectWS = () => {
+    // Only connect if enabled by backend CONFIG
+    if (!settingsStore.enableWebsockets) {
+      console.log('[Realtime] WebSocket is disabled in config. Using polling.')
+      startPolling()
+      return
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = import.meta.env.VITE_API_BASE_URL 
       ? import.meta.env.VITE_API_BASE_URL.replace(/^https?:\/\//, '')
@@ -59,8 +69,11 @@ export function useRealtime() {
       console.warn('[WS] Connection closed. Falling back to polling...')
       isWsConnected.value = false
       startPolling()
-      // Try to reconnect WS after 30 seconds
-      reconnectTimeout = setTimeout(connectWS, 30000)
+      
+      // Only attempt reconnect if still enabled
+      if (settingsStore.enableWebsockets) {
+        reconnectTimeout = setTimeout(connectWS, 30000)
+      }
     }
 
     socket.onerror = () => {
@@ -76,11 +89,21 @@ export function useRealtime() {
   }
 
   onMounted(() => {
-    // Initial fetch to be safe
-    fetchStatus()
+    // If already loaded, connect immediately
+    if (!settingsStore.isLoading) {
+      connectWS()
+    } else {
+      // Otherwise watch and connect once loaded
+      const stopWatch = watch(() => settingsStore.isLoading, (loading) => {
+        if (!loading) {
+          connectWS()
+          stopWatch()
+        }
+      })
+    }
     
-    // Start with WS attempt
-    connectWS()
+    // Ensure we have initial status regardless of WS
+    fetchStatus()
   })
 
   onUnmounted(() => {

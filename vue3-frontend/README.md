@@ -236,3 +236,18 @@ export const userService = {
 3. Add API service in `src/services/yourService.ts`
 4. Add sidebar link in `src/layouts/DashboardLayout.vue`
 5. (Optional) Add permission guard via `meta: { permission: 'your.permission' }`
+
+## 📡 Real-time & Reactivity
+
+### useRealtime() Composable
+Enhanced with a hybrid connection strategy:
+- **WebSocket First**: Attempts connection to `ws/notifications`.
+- **Intelligent Fallback**: If WebSocket is disabled via `.env` or connection fails, automatically switches to **HTTP Polling** (60s interval).
+- **Race-Condition Safe**: Connection attempts wait for global settings to load before deciding to handshake.
+
+### Global Settings Store
+Centralized reactivity via `src/stores/settings.ts`:
+- **siteName**: Syncs across Document Title, Sidebar, and Login pages.
+- **maintenanceMode**: Triggers the global maintenance banner and redirection.
+- **enableWebsockets**: Controlled by Backend to reduce frontend connection errors.
+

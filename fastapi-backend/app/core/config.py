@@ -5,7 +5,7 @@ from typing import List
 class Settings(BaseSettings):
     # ─── Application ────────────────────────────────────────────────
     APP_NAME: str = "CMS Template API"
-    APP_VERSION: str = "1.1.0"
+    APP_VERSION: str = "1.2.0"
     ENV: str = "development"  # development | staging | production
     DEBUG: bool = False
     ENABLE_WEBSOCKETS: bool = True

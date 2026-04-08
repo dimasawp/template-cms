@@ -19,7 +19,13 @@ router = APIRouter(prefix="/api/v1/settings", tags=["Settings"])
 @handle_errors
 async def get_all_settings(db: Session = Depends(get_db)):
     """Akses publik / terbuka untuk ambil konfigurasi web"""
+    from app.core.config import settings as app_settings
     settings_dict = SettingService.get_all(db, as_dict=True)
+    
+    # Inject backend config flags
+    settings_dict["enable_websockets"] = app_settings.ENABLE_WEBSOCKETS
+    settings_dict["app_version"] = app_settings.APP_VERSION
+    
     return success_response(data=settings_dict)
 
 

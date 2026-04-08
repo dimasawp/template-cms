@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
-import { settingService } from '@/services/settingService'
+import { useSettingsStore } from '@/stores/settings'
 import { notificationService } from '@/services/notificationService'
 import Toaster from '@/components/ui/Toaster.vue'
 import {
@@ -18,6 +18,7 @@ import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const settingsStore = useSettingsStore()
 const { isDark, toggleTheme } = useTheme()
 const confirm = useConfirmation()
 const { status: maintenanceStatus } = useRealtime()
@@ -55,17 +56,9 @@ async function handleLogout() {
   }
 }
 
-const siteName = ref('CMS Template')
 const unreadCount = ref(0)
 
 onMounted(async () => {
-  // Fetch Site Name
-  try {
-    const { data: res } = await settingService.getPublic()
-    const settings = res.data || {}
-    if (settings.site_name) siteName.value = settings.site_name
-  } catch { /* ignore */ }
-
   // Fetch Notification Badge
   try {
     const { data: res } = await notificationService.badge()
@@ -85,7 +78,7 @@ onMounted(async () => {
     >
       <!-- Brand -->
       <div class="flex h-16 items-center justify-between px-4 border-b">
-        <span v-if="sidebarOpen" class="text-lg font-bold text-primary truncate">{{ siteName }}</span>
+        <span v-if="sidebarOpen" class="text-lg font-bold text-primary truncate">{{ settingsStore.siteName }}</span>
         <button @click="sidebarOpen = !sidebarOpen" class="p-1 rounded hover:bg-accent">
           <Menu class="h-5 w-5" />
         </button>
@@ -118,7 +111,7 @@ onMounted(async () => {
       <Transition name="slide">
         <aside v-if="mobileSidebarOpen" class="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r shadow-xl lg:hidden">
           <div class="flex h-16 items-center justify-between px-4 border-b">
-            <span class="text-lg font-bold text-primary truncate">{{ siteName }}</span>
+            <span class="text-lg font-bold text-primary truncate">{{ settingsStore.siteName }}</span>
             <button @click="mobileSidebarOpen = false"><X class="h-5 w-5" /></button>
           </div>
           <nav class="py-4 px-2 space-y-1">
@@ -219,7 +212,7 @@ onMounted(async () => {
         
         <!-- Footer -->
         <footer class="py-4 ps-4 text-start text-sm text-muted-foreground border-t bg-card/60">
-          &copy; {{ new Date().getFullYear() }} CMS Template. Version 1.1.0
+          &copy; {{ new Date().getFullYear() }} {{ settingsStore.siteName }}. Version {{ settingsStore.appVersion }}
         </footer>
       </main>
     </div>
