@@ -26,8 +26,9 @@ def create_access_token(
     expires_delta: Optional[timedelta] = None,
 ) -> str:
     """Create a short-lived JWT access token."""
+    from app.helpers.date_helper import get_now_wib_aware
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = get_now_wib_aware() + (
         expires_delta
         or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -37,8 +38,9 @@ def create_access_token(
 
 def create_refresh_token(data: Dict[str, Any]) -> str:
     """Create a long-lived JWT refresh token."""
+    from app.helpers.date_helper import get_now_wib_aware
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = get_now_wib_aware() + timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )
     to_encode.update({"exp": expire, "type": "refresh"})

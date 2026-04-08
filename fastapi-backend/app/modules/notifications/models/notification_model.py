@@ -14,7 +14,7 @@ class Notification(Base):
     type = Column(String(50), default="info")
     read_at = Column(DateTime, nullable=True)
     link = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: __import__('app.helpers.date_helper', fromlist=['get_now_wib']).get_now_wib(), nullable=False, index=True)
     deleted_at = Column(DateTime, nullable=True)
 
     def __repr__(self):

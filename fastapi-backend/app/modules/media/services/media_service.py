@@ -46,7 +46,7 @@ class MediaService:
 
     @staticmethod
     def get_media(db: Session, media_id: int) -> Optional[Media]:
-        return db.query(Media).filter(Media.id == media_id).first()
+        return db.query(Media).filter(Media.id == media_id, Media.deleted_at == None).first()
 
     @staticmethod
     def delete_media(db: Session, media_id: int, user_id: Optional[int] = None) -> bool:
@@ -54,11 +54,11 @@ class MediaService:
         if not media:
             return False
         
-        # Delete physical file
-        StorageManager.delete(media.path)
-        
-        # Delete DB record
-        db.delete(media)
+        # In a soft-delete policy, we usually keep the physical file 
+        # for a while or move it to a 'trash' folder. 
+        # For now, we'll just mark the DB record as deleted.
+        from app.helpers.date_helper import get_now_wib
+        media.deleted_at = get_now_wib()
         db.commit()
         
         return True

@@ -32,12 +32,13 @@ def save_file(
     sub_dir: str = "",
     custom_name: Optional[str] = None,
 ) -> str:
+    from app.helpers.date_helper import get_now_wib
     validate_file(file)
     ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename else "bin"
-    filename = custom_name or f"{uuid.uuid4().hex}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
+    filename = custom_name or f"{uuid.uuid4().hex}_{int(get_now_wib().timestamp())}.{ext}"
     
-    # Add year/month to sub_dir
-    date_path = datetime.now().strftime("%Y/%m")
+    # Add year/month to sub_dir (WIB based)
+    date_path = get_now_wib().strftime("%Y/%m")
     full_sub_dir = os.path.join(sub_dir, date_path) if sub_dir else date_path
     
     dest_dir = _ensure_upload_dir(full_sub_dir)

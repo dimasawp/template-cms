@@ -94,8 +94,8 @@ class BaseRepository:
             return False
         
         if hasattr(obj, "deleted_at"):
-            from datetime import datetime
-            obj.deleted_at = datetime.utcnow()
+            from app.helpers.date_helper import get_now_wib
+            obj.deleted_at = get_now_wib()
         else:
             db.delete(obj)
             

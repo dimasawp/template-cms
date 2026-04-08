@@ -10,7 +10,7 @@ class NotificationRepository(BaseRepository):
 
     @classmethod
     def get_user_notifications(cls, db: Session, user_id: int, *, page=1, per_page=20, unread_only=False):
-        query = db.query(Notification).filter(Notification.user_id == user_id)
+        query = db.query(Notification).filter(Notification.user_id == user_id, Notification.deleted_at == None)
         if unread_only:
             query = query.filter(Notification.read_at.is_(None))
         total = query.count()
@@ -24,7 +24,7 @@ class NotificationRepository(BaseRepository):
     def get_unread_count(cls, db: Session, user_id: int) -> int:
         return (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, Notification.read_at.is_(None))
+            .filter(Notification.user_id == user_id, Notification.read_at.is_(None), Notification.deleted_at == None)
             .count()
         )
 
@@ -32,21 +32,23 @@ class NotificationRepository(BaseRepository):
     def mark_as_read(cls, db: Session, notification_id: int, user_id: int) -> bool:
         notif = (
             db.query(Notification)
-            .filter(Notification.id == notification_id, Notification.user_id == user_id)
+            .filter(Notification.id == notification_id, Notification.user_id == user_id, Notification.deleted_at == None)
             .first()
         )
         if not notif:
             return False
-        notif.read_at = datetime.now(timezone.utc)
+        from app.helpers.date_helper import get_now_wib
+        notif.read_at = get_now_wib()
         db.commit()
         return True
 
     @classmethod
     def mark_all_read(cls, db: Session, user_id: int) -> int:
+        from app.helpers.date_helper import get_now_wib
         count = (
             db.query(Notification)
             .filter(Notification.user_id == user_id, Notification.read_at.is_(None))
-            .update({"read_at": datetime.now(timezone.utc)})
+            .update({"read_at": get_now_wib()})
         )
         db.commit()
         return count

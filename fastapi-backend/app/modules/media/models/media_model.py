@@ -24,8 +24,12 @@ class Media(Base):
     provider_metadata = Column(String(1000), nullable=True)
     
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: __import__('app.helpers.date_helper', fromlist=['get_now_wib']).get_now_wib())
+    updated_at = Column(
+        DateTime,
+        default=lambda: __import__('app.helpers.date_helper', fromlist=['get_now_wib']).get_now_wib(),
+        onupdate=lambda: __import__('app.helpers.date_helper', fromlist=['get_now_wib']).get_now_wib()
+    )
     deleted_at = Column(DateTime, nullable=True)
 
     # Relationships

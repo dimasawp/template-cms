@@ -20,7 +20,8 @@ class LocalProjectProvider(BaseStorageProvider):
         if ext not in settings.allowed_extensions_list:
             raise HTTPException(status_code=400, detail=f"Extension '{ext}' not allowed")
 
-        filename = custom_name or f"{uuid.uuid4().hex}_{int(datetime.now(timezone.utc).timestamp())}.{ext}"
+        from app.helpers.date_helper import get_now_wib
+        filename = custom_name or f"{uuid.uuid4().hex}_{int(get_now_wib().timestamp())}.{ext}"
         
         target_dir = os.path.join(self.base_dir, sub_dir) if sub_dir else self.base_dir
         os.makedirs(target_dir, exist_ok=True)

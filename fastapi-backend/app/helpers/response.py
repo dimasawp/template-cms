@@ -14,7 +14,7 @@ def success_response(
         "code": code,
         "message": message,
         "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": __import__('app.helpers.date_helper', fromlist=['get_now_wib_aware']).get_now_wib_aware().isoformat(),
     }
 
 
@@ -28,7 +28,7 @@ def error_response(
         "status": "error",
         "code": code,
         "message": message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": __import__('app.helpers.date_helper', fromlist=['get_now_wib_aware']).get_now_wib_aware().isoformat(),
     }
     if errors:
         body["errors"] = errors

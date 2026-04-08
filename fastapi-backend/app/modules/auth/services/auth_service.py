@@ -23,13 +23,14 @@ class AuthService:
 
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> User:
-        user = db.query(User).filter(User.username == username).first()
+        user = db.query(User).filter(User.username == username, User.deleted_at == None).first()
         if not user or not verify_password(password, user.password_hash):
             raise UnauthorizedException("Incorrect username or password")
         if not user.is_active:
             raise ForbiddenException("User account is inactive")
         
-        user.last_login_at = datetime.now(timezone.utc)
+        from app.helpers.date_helper import get_now_wib
+        user.last_login_at = get_now_wib()
         db.commit()
         
         return user
@@ -68,9 +69,10 @@ class AuthService:
         import uuid
         
         # Prepare session first with a placeholder for the token to get the ID
+        from app.helpers.date_helper import get_now_wib
         ip_addr = request.client.host if request and request.client else None
         user_agent = request.headers.get("user-agent")[:255] if request and request.headers.get("user-agent") else None
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at = get_now_wib() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
         new_session = UserSession(
             user_id=user_id,
@@ -112,13 +114,15 @@ class AuthService:
             raise UnauthorizedException("User not found or inactive")
 
         # Verify refresh token in DB
+        from app.helpers.date_helper import get_now_wib
         session = db.query(UserSession).filter(UserSession.refresh_token == refresh_token, UserSession.user_id == user_id).first()
-        if not session or session.expires_at < datetime.now(timezone.utc):
+        if not session or session.expires_at < get_now_wib():
             raise UnauthorizedException("Session invalid or expired")
 
         # Update existing session with new refresh token and expiry
         import uuid
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        from app.helpers.date_helper import get_now_wib
+        expires_at = get_now_wib() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         
         # We need to temporarily change the refresh_token to avoid unique constraint 
         # if the new one happened to be the same (unlikely with JWT but good practice)
@@ -143,7 +147,7 @@ class AuthService:
 
     @staticmethod
     def get_user_info(db: Session, user_id: int) -> dict:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id, User.deleted_at == None).first()
         if not user:
             raise NotFoundException("User not found")
 
