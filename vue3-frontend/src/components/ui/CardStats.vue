@@ -1,12 +1,5 @@
-<script setup lang="ts">
-defineProps<{
-  title: string
-  value: string | number
-  description?: string
-  icon?: string
-  trend?: 'up' | 'down' | 'neutral'
-  trendValue?: string
-}>()
+<script setup>
+defineProps(['description', 'icon', 'trend', 'trendValue'])
 </script>
 
 <template>

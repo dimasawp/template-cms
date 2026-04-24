@@ -1,5 +1,5 @@
-<script setup lang="ts">
-defineProps<{ title: string; description?: string; image: string; class?: string }>()
+<script setup>
+defineProps(['description', 'class'])
 </script>
 <template>
   <div :class="['rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden', $props.class]">

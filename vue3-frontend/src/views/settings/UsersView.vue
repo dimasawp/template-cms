@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useDataTable } from '@/composables/useDataTable'
@@ -37,7 +37,7 @@ const { toast } = useToast()
 const confirm = useConfirmation()
 const auth = useAuthStore()
 
-const { items: users, isLoading, pagination, filters, sort, fetchItems, goToPage, setSortField, setSortDirection } = useDataTable<any>({
+const { items: users, isLoading, pagination, filters, sort, fetchItems, goToPage, setSortField, setSortDirection } = useDataTable({
   fetchData: async (params) => {
     const { data: res } = await userService.getAll(params)
     return { items: res.data.items, total: res.data.pagination.total }
@@ -45,7 +45,7 @@ const { items: users, isLoading, pagination, filters, sort, fetchItems, goToPage
   perPage: 10
 })
 
-const roles_list = ref<any[]>([])
+const roles_list = ref([])
 async function fetchRoles() {
   try {
     const { data: res } = await userService.getRoles()
@@ -53,11 +53,11 @@ async function fetchRoles() {
   } catch {}
 }
 
-const handleFilterRole = (roleId: string) => {
+const handleFilterRole = (roleId) => {
   filters.role_id = roleId || undefined
 }
 
-const handleFilterStatus = (status: string) => {
+const handleFilterStatus = (status) => {
   if (status === 'active') filters.is_active = true
   else if (status === 'inactive') filters.is_active = false
   else delete filters.is_active
@@ -65,7 +65,7 @@ const handleFilterStatus = (status: string) => {
   fetchItems()
 }
 
-const getSortIcon = (field: string) => {
+const getSortIcon = (field) => {
   if (sort.field !== field) return ArrowUpDown
   return sort.direction === 'asc' ? ArrowUp : ArrowDown
 }
@@ -77,7 +77,7 @@ const sortRef = ref(null)
 onClickOutside(filterRef, () => { showFilters.value = false })
 onClickOutside(sortRef, () => { showSort.value = false })
 
-const handleEsc = (e: KeyboardEvent) => {
+const handleEsc = (e) => {
   if (e.key === 'Escape') {
     showFilters.value = false
     showSort.value = false
@@ -98,7 +98,7 @@ const showModal = ref(false)
 const isEditing = ref(false)
 const saving = ref(false)
 const form = ref({ username: '', email: '', full_name: '', password: '', role_id: 1, is_active: true })
-const editId = ref<number | null>(null)
+const editId = ref(null)
 
 function openCreate() {
   isEditing.value = false
@@ -107,7 +107,7 @@ function openCreate() {
   showModal.value = true
 }
 
-function openEdit(user: any) {
+function openEdit(user) {
   isEditing.value = true
   editId.value = user.id
   form.value = { username: user.username, email: user.email || '', full_name: user.full_name || '', password: '', role_id: user.role_id, is_active: user.is_active }
@@ -117,7 +117,7 @@ function openEdit(user: any) {
 async function handleSave() {
   saving.value = true
   try {
-    const payload: any = { ...form.value }
+    const payload = { ...form.value }
     if (!payload.password) delete payload.password
     if (isEditing.value && editId.value) {
       await userService.update(editId.value, payload)
@@ -128,14 +128,14 @@ async function handleSave() {
     }
     showModal.value = false
     fetchItems()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' })
   } finally {
     saving.value = false
   }
 }
 
-async function handleDelete(user: any) {
+async function handleDelete(user) {
   const ok = await confirm.confirm({ title: 'Hapus User', message: `Yakin ingin menghapus "${user.username}"?`, variant: 'destructive' })
   if (!ok) return
   try {

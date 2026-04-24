@@ -1,10 +1,10 @@
-<script setup lang="ts">
+<script setup>
 import { ref, computed } from 'vue'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff } from 'lucide-vue-next'
 
-const props = defineProps<{ class?: string; type?: string; modelValue?: string | number; placeholder?: string; disabled?: boolean }>()
-defineEmits<{ 'update:modelValue': [value: string | number] }>()
+const props = defineProps(['class', 'type', 'modelValue', 'placeholder', 'disabled'])
+defineEmits(['update:modelValue'])
 
 const showPassword = ref(false)
 
@@ -28,7 +28,7 @@ const inputType = computed(() => {
         props.type === 'password' && 'pr-10',
         props.class
       )"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="$emit('update:modelValue', ($event.target).value)"
     />
     <button 
       v-if="props.type === 'password'"

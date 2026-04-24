@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'

@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { settingService } from '@/services/settingService'
 
 const router = createRouter({
-  // ... (keep routes as is)
+  // ... (keep routes)
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // ── Auth (guest only) ──────────────────────────────────────────
@@ -93,7 +93,7 @@ router.beforeEach(async (to, _from, next) => {
 
   // Permission check
   if (to.meta.permission && auth.isAuthenticated) {
-    if (!auth.hasPermission(to.meta.permission as string)) {
+    if (!auth.hasPermission(to.meta.permission)) {
       return next({ name: 'forbidden' })
     }
   }

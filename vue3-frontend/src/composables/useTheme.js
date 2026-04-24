@@ -5,7 +5,7 @@ const saved = localStorage.getItem('theme')
 const initialDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
 const isDark = ref(initialDark)
 
-function applyTheme(dark: boolean) {
+function applyTheme(dark) {
   const root = document.documentElement
   root.classList.remove('light', 'dark')
   root.classList.add(dark ? 'dark' : 'light')

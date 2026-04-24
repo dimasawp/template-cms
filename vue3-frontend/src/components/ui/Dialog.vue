@@ -1,18 +1,12 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
 
-const props = defineProps<{
-  open: boolean
-  title: string
-  maxWidth?: string
-}>()
+const props = defineProps(['maxWidth'])
 
-const emit = defineEmits<{
-  (e: 'close'): void
-}>()
+const emit = defineEmits()
 
-const handleEsc = (e: KeyboardEvent) => {
+const handleEsc = (e) => {
   if (e.key === 'Escape' && props.open) {
     emit('close')
   }

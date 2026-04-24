@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, computed } from 'vue'
 import { authService } from '@/services/authService'
 import { useToast } from '@/composables/useToast'
@@ -25,17 +25,17 @@ const { toast } = useToast()
 const confirm = useConfirmation()
 const auth = useAuthStore()
 
-const sessions = ref<any[]>([])
+const sessions = ref([])
 const isLoading = ref(true)
 const searchQuery = ref('')
-const selectedIds = ref<number[]>([])
+const selectedIds = ref([])
 
 async function fetchSessions() {
   isLoading.value = true
   try {
     const { data: res } = await authService.getSessions()
     sessions.value = res.data
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Error', description: 'Gagal memuat sesi aktif', variant: 'destructive' })
   } finally {
     isLoading.value = false
@@ -70,7 +70,7 @@ function toggleSelectAll() {
   }
 }
 
-function toggleSelect(id: number) {
+function toggleSelect(id) {
   const index = selectedIds.value.indexOf(id)
   if (index > -1) {
     selectedIds.value.splice(index, 1)
@@ -79,7 +79,7 @@ function toggleSelect(id: number) {
   }
 }
 
-async function handleRevoke(session: any) {
+async function handleRevoke(session) {
   const ok = await confirm.confirm({
     title: 'Revoke Session?',
     message: `Apakah Anda yakin ingin menghentikan sesi untuk user "${session.username}"?`,
@@ -92,7 +92,7 @@ async function handleRevoke(session: any) {
     await authService.revokeSession(session.id)
     toast({ title: 'Berhasil', description: 'Sesi telah dihentikan', variant: 'success' })
     fetchSessions()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: 'Gagal menghentikan sesi', variant: 'destructive' })
   }
 }
@@ -114,12 +114,12 @@ async function handleBulkRevoke() {
     toast({ title: 'Berhasil', description: `${count} sesi telah dihentikan`, variant: 'success' })
     selectedIds.value = []
     fetchSessions()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: 'Gagal menghentikan sesi masal', variant: 'destructive' })
   }
 }
 
-function parseUserAgent(ua: string) {
+function parseUserAgent(ua) {
   if (!ua) return 'Unknown Device'
   if (ua.includes('Windows')) return 'Windows PC'
   if (ua.includes('Macintosh')) return 'Mac'
@@ -129,7 +129,7 @@ function parseUserAgent(ua: string) {
   return ua.split(' ')[0] || 'Unknown'
 }
 
-function getDeviceIcon(ua: string) {
+function getDeviceIcon(ua) {
   if (!ua) return Monitor
   if (ua.includes('Android') || ua.includes('iPhone')) return Smartphone
   if (ua.includes('iPad')) return Tablet

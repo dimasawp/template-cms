@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { cva, type VariantProps } from 'class-variance-authority'
+<script setup>
+import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
@@ -25,23 +25,18 @@ const buttonVariants = cva(
   },
 )
 
-type ButtonVariants = VariantProps<typeof buttonVariants>
-
-const props = withDefaults(
-  defineProps<{
-    variant?: NonNullable<ButtonVariants['variant']>
-    size?: NonNullable<ButtonVariants['size']>
-    class?: string
-    disabled?: boolean
-    loading?: boolean
-  }>(),
-  { variant: 'default', size: 'default' },
-)
+const props = defineProps({
+  variant: { type: String, default: 'default' },
+  size: { type: String, default: 'default' },
+  class: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
+  loading: { type: Boolean, default: false }
+})
 </script>
 
 <template>
-  <button :class="cn(buttonVariants({ variant, size }), props.class)" :disabled="disabled || loading">
-    <svg v-if="loading" class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <button :class="cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)" :disabled="props.disabled || props.loading">
+    <svg v-if="props.loading" class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>

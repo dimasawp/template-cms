@@ -4,11 +4,11 @@ export function useConfirmation() {
   const isOpen = ref(false)
   const title = ref('')
   const message = ref('')
-  const variant = ref<'default' | 'destructive' | 'warning' | 'info'>('default')
+  const variant = ref('default')
 
-  let _resolve: ((value: boolean) => void) | null = null
+  let _resolve = null
 
-  function confirm(opts: { title: string; message: string; variant?: 'default' | 'destructive' | 'warning' | 'info' }): Promise<boolean> {
+  function confirm(opts) {
     title.value = opts.title
     message.value = opts.message
     variant.value = opts.variant || 'default'

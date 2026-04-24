@@ -1,6 +1,6 @@
-<script setup lang="ts">
+<script setup>
 import { cn } from '@/lib/utils'
-defineProps<{ class?: string }>()
+defineProps(['class'])
 </script>
 <template>
   <div :class="cn('animate-pulse rounded-md bg-muted', $props.class)" />

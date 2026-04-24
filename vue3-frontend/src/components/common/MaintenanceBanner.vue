@@ -1,14 +1,12 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { AlertCircle, Clock, ShieldAlert } from 'lucide-vue-next'
 
-const props = defineProps<{
-  scheduledAt: string | null
-}>()
+const props = defineProps()
 
 const timeLeft = ref('')
 const isUrgent = ref(false)
-let timer: any = null
+let timer = null
 
 function updateCountdown() {
   if (!props.scheduledAt) return

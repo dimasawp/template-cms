@@ -1,13 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import Label from './Label.vue'
 
-defineProps<{
-  label?: string
-  error?: string
-  required?: boolean
-  description?: string
-  htmlFor?: string
-}>()
+defineProps(['label', 'error', 'required', 'description', 'htmlFor'])
 </script>
 
 <template>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue'
 import { settingService } from '@/services/settingService'
 import { useToast } from '@/composables/useToast'
@@ -23,7 +23,7 @@ const isSaving = ref(false)
 const form = ref({
   site_name: '',
   maintenance_mode: 'false',
-  maintenance_scheduled_at: null as string | null,
+  maintenance_scheduled_at: null,
   contact_email: '',
   enable_user_avatars: 'true',
   allow_username_change: 'true',
@@ -39,15 +39,15 @@ async function fetchSettings() {
     const configs = res.data || []
     
     // map to form
-    const st = { ...form.value } as Record<string, string>
-    configs.forEach((item: any) => {
+    const st = { ...form.value }
+    configs.forEach((item) => {
       if (st[item.setting_key] !== undefined) {
         st[item.setting_key] = item.setting_value || ''
       }
     })
-    form.value = st as any
+    form.value = st
     
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Error', description: 'Gagal mengambil pengaturan', variant: 'destructive' })
   } finally {
     isLoading.value = false
@@ -92,7 +92,7 @@ async function handleSave() {
     ]
     await settingService.bulkUpdate(payload)
     toast({ title: 'Berhasil', description: 'Pengaturan global berhasil disimpan', variant: 'success' })
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: 'Gagal menyimpan pengaturan', variant: 'destructive' })
   } finally {
     isSaving.value = false
@@ -118,7 +118,7 @@ onMounted(() => {
       <div class="space-y-4">
         <div>
           <Label for="siteName">Site Name (Nama Website)</Label>
-          <Input id="siteName" v-model="form.site_name" :disabled="!canEdit" placeholder="Misal: Portal Web CMS" class="mt-1" />
+          <Input id="siteName" v-model="form.site_name" :disabled="!canEdit" placeholder="Misal Web CMS" class="mt-1" />
           <p class="text-xs text-muted-foreground mt-1">Nama ini akan muncul di judul browser dan header email.</p>
         </div>
 
@@ -134,7 +134,7 @@ onMounted(() => {
             id="maintenance" 
             :checked="form.maintenance_mode === 'true'"
             :disabled="!canEdit"
-            @change="form.maintenance_mode = ($event.target as HTMLInputElement).checked ? 'true' : 'false'"
+            @change="form.maintenance_mode = ($event.target).checked ? 'true' : 'false'"
             class="rounded w-4 h-4 text-primary" 
           />
           <div class="flex-1">
@@ -168,7 +168,7 @@ onMounted(() => {
             id="enableAvatars" 
             :checked="form.enable_user_avatars === 'true'"
             :disabled="!canEdit"
-            @change="form.enable_user_avatars = ($event.target as HTMLInputElement).checked ? 'true' : 'false'"
+            @change="form.enable_user_avatars = ($event.target).checked ? 'true' : 'false'"
             class="rounded w-4 h-4 text-primary" 
           />
           <div>
@@ -183,7 +183,7 @@ onMounted(() => {
             id="allowUsernameChange" 
             :checked="form.allow_username_change === 'true'"
             :disabled="!canEdit"
-            @change="form.allow_username_change = ($event.target as HTMLInputElement).checked ? 'true' : 'false'"
+            @change="form.allow_username_change = ($event.target).checked ? 'true' : 'false'"
             class="rounded w-4 h-4 text-primary" 
           />
           <div>
@@ -198,7 +198,7 @@ onMounted(() => {
             id="registrationEnabled" 
             :checked="form.registration_enabled === 'true'"
             :disabled="!canEdit"
-            @change="form.registration_enabled = ($event.target as HTMLInputElement).checked ? 'true' : 'false'"
+            @change="form.registration_enabled = ($event.target).checked ? 'true' : 'false'"
             class="rounded w-4 h-4 text-primary" 
           />
           <div>

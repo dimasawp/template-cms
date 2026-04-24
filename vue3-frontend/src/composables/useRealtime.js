@@ -2,21 +2,16 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { settingService } from '@/services/settingService'
 import { useSettingsStore } from '@/stores/settings'
 
-export interface MaintenanceStatus {
-  maintenance_mode: string
-  maintenance_scheduled_at: string | null
-}
-
 export function useRealtime() {
-  const status = ref<MaintenanceStatus>({
+  const status = ref({
     maintenance_mode: 'false',
     maintenance_scheduled_at: null
   })
   
   const isWsConnected = ref(false)
-  let socket: WebSocket | null = null
-  let pollingInterval: any = null
-  let reconnectTimeout: any = null
+  let socket = null
+  let pollingInterval = null
+  let reconnectTimeout = null
 
   const settingsStore = useSettingsStore()
 

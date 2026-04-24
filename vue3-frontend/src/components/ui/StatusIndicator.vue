@@ -1,11 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 
-const props = defineProps<{
-  active: boolean
-  label?: string
-  showDot?: boolean
-}>()
+const props = defineProps(['label', 'showDot'])
 
 const statusLabel = computed(() => props.label || (props.active ? 'Aktif' : 'Nonaktif'))
 

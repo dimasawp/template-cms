@@ -1,6 +1,6 @@
-<script setup lang="ts">
-defineProps<{ currentPage: number; totalPages: number }>()
-defineEmits<{ 'page-change': [page: number] }>()
+<script setup>
+defineProps()
+defineEmits(['page-change'])
 </script>
 <template>
   <div v-if="totalPages > 1" class="flex items-center gap-1">

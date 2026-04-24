@@ -1,5 +1,5 @@
-<script setup lang="ts">
-defineProps<{ title: string; description?: string }>()
+<script setup>
+defineProps(['description'])
 </script>
 <template>
   <div class="mb-6">

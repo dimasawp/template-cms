@@ -2,23 +2,12 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 
-export interface AuthUser {
-  id: number
-  username: string
-  email: string | null
-  full_name: string | null
-  role_name: string
-  permissions: string[]
-  is_active: boolean
-  avatar: string | null
-}
-
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<AuthUser | null>(null)
-  const accessToken = ref<string | null>(localStorage.getItem('access_token'))
-  const refreshToken = ref<string | null>(localStorage.getItem('refresh_token'))
+  const user = ref(null)
+  const accessToken = ref(localStorage.getItem('access_token'))
+  const refreshToken = ref(localStorage.getItem('refresh_token'))
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref(null)
 
   // Getters
   const isAuthenticated = computed(() => !!accessToken.value)
@@ -26,13 +15,13 @@ export const useAuthStore = defineStore('auth', () => {
   const userRole = computed(() => user.value?.role_name || '')
   const permissions = computed(() => user.value?.permissions || [])
 
-  function hasPermission(perm: string): boolean {
+  function hasPermission(perm) {
     if (userRole.value === 'super_admin') return true
     return permissions.value.includes(perm)
   }
 
   // Actions
-  async function login(credentials: { username: string; password: string }) {
+  async function login(credentials) {
     isLoading.value = true
     error.value = null
     try {
@@ -44,9 +33,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refresh_token', tokens.refresh_token)
       await fetchCurrentUser()
       return true
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string; message?: string } } }
-      error.value = e.response?.data?.message || e.response?.data?.detail || 'Login failed'
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Login failed'
       return false
     } finally {
       isLoading.value = false

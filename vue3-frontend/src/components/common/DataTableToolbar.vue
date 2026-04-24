@@ -1,21 +1,11 @@
-<script setup lang="ts">
+<script setup>
 import { Search, RotateCw, Plus } from 'lucide-vue-next'
 import Input from '@/components/ui/Input.vue'
 import Button from '@/components/ui/Button.vue'
 
-defineProps<{
-  searchPlaceholder?: string
-  isLoading?: boolean
-  showAddButton?: boolean
-  addButtonLabel?: string
-  searchModelValue: string
-}>()
+defineProps(['searchPlaceholder', 'isLoading', 'showAddButton', 'addButtonLabel'])
 
-defineEmits<{
-  'update:searchModelValue': [value: string]
-  refresh: []
-  add: []
-}>()
+defineEmits(['update:searchModelValue'])
 </script>
 
 <template>
@@ -27,7 +17,7 @@ defineEmits<{
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
             :model-value="searchModelValue"
-            @update:model-value="v => $emit('update:searchModelValue', v as string)"
+            @update:model-value="v => $emit('update:searchModelValue', v)"
             :placeholder="searchPlaceholder || 'Cari data...'" 
             class="pl-10 h-10 border-input bg-background focus:border-primary focus:ring-primary/20 shadow-sm"
           />
@@ -62,7 +52,7 @@ defineEmits<{
       </div>
     </div>
     
-    <!-- Optional: Bottom bar if needed -->
+    <!-- Optional bar if needed -->
     <slot name="bottom" />
   </div>
 </template>

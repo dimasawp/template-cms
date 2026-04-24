@@ -1,10 +1,10 @@
-<script setup lang="ts">
-import { useToast, type Toast } from '@/composables/useToast'
+<script setup>
+import { useToast } from '@/composables/useToast'
 import { X } from 'lucide-vue-next'
 
 const { toasts, dismiss } = useToast()
 
-function variantClass(t: Toast) {
+function variantClass(t) {
   if (t.variant === 'destructive') return 'border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200'
   if (t.variant === 'success') return 'border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200'
   return 'border-border bg-background text-foreground'

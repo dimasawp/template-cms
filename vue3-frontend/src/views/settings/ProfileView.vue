@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/authService'
@@ -75,7 +75,7 @@ async function handleUpdateProfile() {
     await apiUpdateProfile(profileForm.value)
     toast({ title: 'Berhasil', description: 'Profil berhasil diperbarui', variant: 'success' })
     auth.fetchCurrentUser()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal memperbarui profil', variant: 'destructive' })
   } finally {
     isSavingProfile.value = false
@@ -83,7 +83,7 @@ async function handleUpdateProfile() {
 }
 
 // Manual helper since it's not yet in axios but will be
-const apiUpdateProfile = (data: any) => authService.updateMe(data)
+const apiUpdateProfile = (data) => authService.updateMe(data)
 // (Note: we'll add updateMe to authService.ts shortly)
 
 async function handleChangePassword() {
@@ -113,15 +113,15 @@ async function handleChangePassword() {
       auth.logout()
       window.location.reload()
     }, 2000)
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal mengganti password', variant: 'destructive' })
   } finally {
     isSavingPassword.value = false
   }
 }
 
-async function onFileSelected(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
+async function onFileSelected(event) {
+  const file = (event.target).files?.[0]
   if (!file) return
 
   const formData = new FormData()
@@ -152,7 +152,7 @@ onMounted(fetchData)
     </div>
 
     <div v-else class="grid gap-6 md:grid-cols-3">
-      <!-- Left: Photo & Basic Info -->
+      <!-- Left & Basic Info -->
       <div class="md:col-span-1 space-y-6">
         <div class="bg-card rounded-lg border p-6 flex flex-col items-center text-center shadow-sm">
           <div class="relative group">
@@ -190,7 +190,7 @@ onMounted(fetchData)
         </div>
       </div>
 
-      <!-- Right: Forms -->
+      <!-- Right -->
       <div class="md:col-span-2 space-y-6">
         <!-- Profile Form -->
         <div class="bg-card rounded-lg border shadow-sm">

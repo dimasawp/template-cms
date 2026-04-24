@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { useAuthStore } from '@/stores/auth'
 import CardStats from '@/components/ui/CardStats.vue'
 import PageHeader from '@/components/common/PageHeader.vue'

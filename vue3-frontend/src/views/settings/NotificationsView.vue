@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted } from 'vue'
 import { notificationService } from '@/services/notificationService'
 import { useToast } from '@/composables/useToast'
@@ -11,7 +11,7 @@ import { Bell, CheckCheck, RefreshCw, Info, AlertTriangle, AlertCircle } from 'l
 
 const { toast } = useToast()
 
-const { items: notifications, isLoading, pagination, fetchItems, goToPage } = useDataTable<any>({
+const { items: notifications, isLoading, pagination, fetchItems, goToPage } = useDataTable({
   fetchData: async (params) => {
     const { data: res } = await notificationService.getAll(params)
     return { items: res.data.items, total: res.data.pagination.total }
@@ -28,7 +28,7 @@ async function markAllRead() {
   }
 }
 
-async function markRead(id: number) {
+async function markRead(id) {
   try {
     await notificationService.markRead(id)
     fetchItems()
@@ -37,7 +37,7 @@ async function markRead(id: number) {
   }
 }
 
-function getIcon(type: string) {
+function getIcon(type) {
   switch (type) {
     case 'warning': return AlertTriangle
     case 'error':   return AlertCircle
@@ -45,7 +45,7 @@ function getIcon(type: string) {
   }
 }
 
-function getColorClass(type: string) {
+function getColorClass(type) {
   switch (type) {
     case 'warning': return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20'
     case 'error':   return 'text-red-600 bg-red-50 dark:bg-red-900/20'

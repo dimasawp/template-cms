@@ -1,13 +1,9 @@
-<script setup lang="ts">
+<script setup>
 import { X } from 'lucide-vue-next'
 
-defineProps<{
-  title: string
-}>()
+defineProps()
 
-defineEmits<{
-  close: []
-}>()
+defineEmits()
 </script>
 
 <template>

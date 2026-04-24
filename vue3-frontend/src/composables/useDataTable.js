@@ -1,22 +1,11 @@
 import { ref, reactive, watch } from 'vue'
 
-export interface SortOption {
-  field: string
-  direction: 'asc' | 'desc'
-}
-
-export interface DataTableOptions<T> {
-  fetchData: (params: Record<string, unknown>) => Promise<{ items: T[]; total: number }>
-  initialSort?: SortOption
-  perPage?: number
-}
-
 /**
  * Composable for server-side paginated data tables.
  *
  * Usage:
  * ```
- * const { items, isLoading, pagination, search, fetchItems } = useDataTable<User>({
+ * const { items, isLoading, pagination, search, fetchItems } = useDataTable({
  *   fetchData: async (params) => {
  *     const { data } = await userService.getAll(params)
  *     return { items: data.data.items, total: data.data.pagination.total }
@@ -24,12 +13,12 @@ export interface DataTableOptions<T> {
  * })
  * ```
  */
-export function useDataTable<T>(options: DataTableOptions<T>) {
-  const items = ref<T[]>([]) as any
+export function useDataTable(options) {
+  const items = ref([])
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref(null)
   const search = ref('')
-  const filters = reactive<Record<string, any>>({
+  const filters = reactive({
     search: ''
   })
 
@@ -40,7 +29,7 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
     totalPages: 0,
   })
 
-  const sort = reactive<SortOption>(
+  const sort = reactive(
     options.initialSort || { field: 'id', direction: 'desc' },
   )
 
@@ -48,7 +37,7 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
     isLoading.value = true
     error.value = null
     try {
-      const params: Record<string, unknown> = {
+      const params = {
         page: pagination.page,
         per_page: pagination.perPage,
         ...filters,
@@ -63,25 +52,25 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
       items.value = result.items
       pagination.total = result.total
       pagination.totalPages = Math.ceil(result.total / pagination.perPage)
-    } catch (err: any) {
+    } catch (err) {
       error.value = err.message || 'Failed to load data'
     } finally {
       isLoading.value = false
     }
   }
 
-  const goToPage = (page: number) => {
+  const goToPage = (page) => {
     pagination.page = page
     fetchItems()
   }
 
-  const setSearch = (q: string) => {
+  const setSearch = (q) => {
     search.value = q
     pagination.page = 1
     fetchItems()
   }
 
-  const setSortField = (field: string) => {
+  const setSortField = (field) => {
     if (sort.field === field) {
       sort.direction = sort.direction === 'asc' ? 'desc' : 'asc'
     } else {
@@ -92,14 +81,14 @@ export function useDataTable<T>(options: DataTableOptions<T>) {
     fetchItems()
   }
 
-  const setSortDirection = (direction: 'asc' | 'desc') => {
+  const setSortDirection = (direction) => {
     sort.direction = direction
     pagination.page = 1
     fetchItems()
   }
 
   // Debounced search logic for filters
-  let debounceTimer: ReturnType<typeof setTimeout>
+  let debounceTimer
   watch(
     () => ({ ...filters }),
     () => {

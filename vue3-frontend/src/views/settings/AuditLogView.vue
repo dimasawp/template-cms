@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import auditService, { type AuditLog } from '@/services/auditService'
+import auditService from '@/services/auditService'
 import { useDataTable } from '@/composables/useDataTable'
 import { 
   Globe, 
@@ -36,7 +36,7 @@ const {
   goToPage,
   setSortField,
   setSortDirection 
-} = useDataTable<AuditLog>({
+} = useDataTable({
   fetchData: async (params) => {
     const { data: res } = await auditService.getLogs(params)
     return { items: res.data.items, total: res.data.pagination.total }
@@ -47,7 +47,7 @@ const {
 const showFilters = ref(false)
 const showSort = ref(false)
 
-const selectedLog = ref<AuditLog | null>(null)
+const selectedLog = ref(null)
 const showDetailModal = ref(false)
 
 const moduleCategories = [
@@ -61,32 +61,32 @@ const moduleCategories = [
   }
 ]
 
-const openDetail = (log: AuditLog) => {
+const openDetail = (log) => {
   selectedLog.value = log
   showDetailModal.value = true
 }
 
-const formatDateTime = (dateStr: string) => {
+const formatDateTime = (dateStr) => {
   return format(new Date(dateStr), 'dd MMM yyyy, HH:mm:ss', { locale: id })
 }
 
-const badgeVariantMap: Record<string, any> = {
+const badgeVariantMap = {
   'LOGIN': 'primary',
   'CREATE': 'success',
   'UPDATE': 'warning',
   'DELETE': 'destructive'
 }
 
-const getBadgeVariant = (action: string) => {
+const getBadgeVariant = (action) => {
   return badgeVariantMap[action.toUpperCase()] || 'secondary'
 }
 
 
-const handleFilterModule = (val: string) => {
+const handleFilterModule = (val) => {
   filters.module = val || undefined
 }
 
-const getSortIcon = (field: string) => {
+const getSortIcon = (field) => {
   if (sort.field !== field) return ArrowUpDown
   return sort.direction === 'asc' ? ArrowUp : ArrowDown
 }
@@ -100,7 +100,7 @@ onClickOutside(filterRef, () => { showFilters.value = false })
 onClickOutside(sortRef, () => { showSort.value = false })
 onClickOutside(modalRef, () => { showDetailModal.value = false })
 
-const handleEsc = (e: KeyboardEvent) => {
+const handleEsc = (e) => {
   if (e.key === 'Escape') {
     showFilters.value = false
     showSort.value = false

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/authService'
@@ -38,7 +38,7 @@ async function handleRegister() {
     
     toast({ title: 'Berhasil', description: 'Pendaftaran berhasil! Silakan masuk.', variant: 'success' })
     router.push('/login')
-  } catch (err: any) {
+  } catch (err) {
     toast({ 
       title: 'Gagal', 
       description: err.response?.data?.detail || 'Gagal melakukan pendaftaran', 

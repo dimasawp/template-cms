@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import PageHeader from '@/components/common/PageHeader.vue'
 
 // UI Components

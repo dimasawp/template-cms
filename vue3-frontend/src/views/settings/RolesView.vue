@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useDataTable } from '@/composables/useDataTable'
@@ -23,7 +23,7 @@ const { toast } = useToast()
 const confirm = useConfirmation()
 const auth = useAuthStore()
 
-const { items: roles, isLoading, pagination, filters, sort, fetchItems, goToPage, setSortField, setSortDirection } = useDataTable<any>({
+const { items: roles, isLoading, pagination, filters, sort, fetchItems, goToPage, setSortField, setSortDirection } = useDataTable({
   fetchData: async (params) => {
     const { data: res } = await roleService.getAll(params)
     return { items: res.data.items, total: res.data.pagination.total }
@@ -34,13 +34,13 @@ const { items: roles, isLoading, pagination, filters, sort, fetchItems, goToPage
 const showFilters = ref(false)
 const showSort = ref(false)
 
-const getSortIcon = (field: string) => {
+const getSortIcon = (field) => {
   if (sort.field !== field) return ArrowUpDown
   return sort.direction === 'asc' ? ArrowUp : ArrowDown
 }
 
 // All permissions for the matrix
-const allPermissions = ref<any[]>([])
+const allPermissions = ref([])
 async function loadPermissions() {
   try {
     const { data: res } = await roleService.permissions()
@@ -63,8 +63,8 @@ onMounted(() => {
 const showModal = ref(false)
 const isEditing = ref(false)
 const saving = ref(false)
-const form = ref({ name: '', description: '', permission_ids: [] as number[] })
-const editId = ref<number | null>(null)
+const form = ref({ name: '', description: '', permission_ids: [] })
+const editId = ref(null)
 
 function openCreate() {
   isEditing.value = false
@@ -73,14 +73,14 @@ function openCreate() {
   showModal.value = true
 }
 
-function openEdit(role: any) {
+function openEdit(role) {
   isEditing.value = true
   editId.value = role.id
-  form.value = { name: role.name, description: role.description || '', permission_ids: role.permissions.map((p: any) => p.id) }
+  form.value = { name: role.name, description: role.description || '', permission_ids: role.permissions.map((p) => p.id) }
   showModal.value = true
 }
 
-function togglePermission(id: number) {
+function togglePermission(id) {
   const idx = form.value.permission_ids.indexOf(id)
   if (idx >= 0) form.value.permission_ids.splice(idx, 1)
   else form.value.permission_ids.push(id)
@@ -98,21 +98,21 @@ async function handleSave() {
     }
     showModal.value = false
     fetchItems()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Error', description: err.response?.data?.message || 'Failed', variant: 'destructive' })
   } finally {
     saving.value = false
   }
 }
 
-async function handleDelete(role: any) {
+async function handleDelete(role) {
   const ok = await confirm.confirm({ title: 'Hapus Role', message: `Yakin ingin menghapus role "${role.name}"?`, variant: 'destructive' })
   if (!ok) return
   try {
     await roleService.delete(role.id)
     toast({ title: 'Role deleted', variant: 'success' })
     fetchItems()
-  } catch (err: any) {
+  } catch (err) {
     toast({ title: 'Gagal', description: err.response?.data?.message || 'Failed', variant: 'destructive' })
   }
 }

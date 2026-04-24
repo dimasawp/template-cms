@@ -1,12 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 
-const props = defineProps<{
-  src?: string | null
-  name?: string | null
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
-}>()
+const props = defineProps(['src', 'name', 'size', 'className'])
 
 const sizeClasses = {
   xs: 'h-6 w-6 text-[10px]',

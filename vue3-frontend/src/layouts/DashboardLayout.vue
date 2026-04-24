@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -27,7 +27,7 @@ const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
 
 const menuItems = computed(() => [
-  { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard', permission: null },
+  { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' },
   { name: 'Users', icon: Users, route: '/users', permission: 'users.view' },
   { name: 'Roles', icon: Shield, route: '/roles', permission: 'roles.view' },
   { name: 'Global Settings', icon: Settings, route: '/global-settings', permission: 'settings.view' },
@@ -39,7 +39,7 @@ const visibleMenu = computed(() =>
   menuItems.value.filter(m => !m.permission || auth.hasPermission(m.permission))
 )
 
-function isActive(path: string) {
+function isActive(path) {
   return route.path === path
 }
 

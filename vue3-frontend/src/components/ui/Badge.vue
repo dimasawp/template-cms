@@ -1,10 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 
-const props = defineProps<{
-  variant?: 'primary' | 'success' | 'destructive' | 'warning' | 'indigo' | 'outline' | 'secondary'
-  size?: 'sm' | 'md'
-}>()
+const props = defineProps(['variant', 'size'])
 
 const variantClasses = {
   primary: 'bg-primary/10 text-primary border-primary/20',

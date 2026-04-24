@@ -1,24 +1,16 @@
-<script setup lang="ts">
+<script setup>
 import { AlertTriangle, AlertCircle, Info } from 'lucide-vue-next'
 import Button from './Button.vue'
 import Dialog from './Dialog.vue'
 
-defineProps<{
-  open: boolean
-  title: string
-  message: string
-  variant?: 'default' | 'destructive' | 'warning' | 'info'
-  confirmLabel?: string
-  cancelLabel?: string
-  loading?: boolean
-}>()
+const props = defineProps(['open', 'title', 'message', 'variant', 'confirmLabel', 'cancelLabel', 'loading'])
 
-defineEmits<{ confirm: []; cancel: [] }>()
+defineEmits(['confirm', 'cancel'])
 
 const variantIcons = {
   default: Info,
   destructive: AlertTriangle,
-  warning: AlertCircle,
+  warning: AlertTriangle,
   info: Info
 }
 
@@ -32,20 +24,20 @@ const iconColors = {
 
 <template>
   <Dialog 
-    :open="open" 
-    :title="title" 
+    :open="props.open" 
+    :title="props.title" 
     maxWidth="max-w-sm" 
     @close="$emit('cancel')"
   >
     <div class="flex flex-col items-center text-center py-2 px-1">
       <!-- Icon Container -->
-      <div :class="['p-4 rounded-2xl border mb-6 transition-all scale-110 shadow-sm', iconColors[variant || 'default']]">
-        <component :is="variantIcons[variant || 'default']" class="w-8 h-8" />
+      <div :class="['p-4 rounded-2xl border mb-6 transition-all scale-110 shadow-sm', iconColors[props.variant || 'default']]">
+        <component :is="variantIcons[props.variant || 'default']" class="w-8 h-8" />
       </div>
       
       <!-- Content -->
       <p class="text-[14px] text-muted-foreground leading-relaxed font-medium px-2">
-        {{ message }}
+        {{ props.message }}
       </p>
     </div>
 
@@ -54,19 +46,19 @@ const iconColors = {
         <Button 
           variant="outline" 
           @click="$emit('cancel')"
-          :disabled="loading"
+          :disabled="props.loading"
           class="rounded-xl font-bold h-11"
         >
-          {{ cancelLabel || 'Batal' }}
+          {{ props.cancelLabel || 'Batal' }}
         </Button>
         <Button 
-          :variant="variant === 'destructive' ? 'destructive' : 'default'" 
+          :variant="props.variant === 'destructive' ? 'destructive' : 'default'" 
           @click="$emit('confirm')"
-          :loading="loading"
+          :loading="props.loading"
           class="rounded-xl font-bold h-11"
-          :class="variant === 'destructive' ? 'shadow-lg shadow-rose-500/20' : 'shadow-lg shadow-primary/20'"
+          :class="props.variant === 'destructive' ? 'shadow-lg shadow-rose-500/20' : 'shadow-lg shadow-primary/20'"
         >
-          {{ confirmLabel || 'Ya, Lanjutkan' }}
+          {{ props.confirmLabel || 'Ya, Lanjutkan' }}
         </Button>
       </div>
     </template>
