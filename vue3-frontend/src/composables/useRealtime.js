@@ -84,13 +84,12 @@ export function useRealtime() {
   }
 
   onMounted(() => {
-    // If already loaded, connect immediately
-    if (!settingsStore.isLoading) {
+    // Wait until settings are initialized to know if WS is enabled or not
+    if (settingsStore.isInitialized) {
       connectWS()
     } else {
-      // Otherwise watch and connect once loaded
-      const stopWatch = watch(() => settingsStore.isLoading, (loading) => {
-        if (!loading) {
+      const stopWatch = watch(() => settingsStore.isInitialized, (initialized) => {
+        if (initialized) {
           connectWS()
           stopWatch()
         }

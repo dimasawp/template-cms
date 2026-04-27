@@ -8,14 +8,13 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import Button from '@/components/ui/Button.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
+import DataTableToolbar from '@/components/common/DataTableToolbar.vue'
 import { 
   Monitor, 
   Tablet, 
   Smartphone, 
   LogOut, 
-  RefreshCw, 
   ShieldAlert, 
-  Search, 
   Trash2, 
   CheckSquare, 
   Square 
@@ -59,11 +58,9 @@ const isAllSelected = computed(() => {
 
 function toggleSelectAll() {
   if (isAllSelected.value) {
-    // If all currently visible are selected, unselect only these
     const visibleIds = filteredSessions.value.map(s => s.id)
     selectedIds.value = selectedIds.value.filter(id => !visibleIds.includes(id))
   } else {
-    // Select all visible that are not already selected
     const visibleIds = filteredSessions.value.map(s => s.id)
     const newSelection = [...new Set([...selectedIds.value, ...visibleIds])]
     selectedIds.value = newSelection
@@ -140,55 +137,57 @@ onMounted(fetchSessions)
 </script>
 
 <template>
-  <div class="space-y-6 text-sm">
+  <div class="space-y-6">
     <PageHeader title="Active Sessions" description="Pantau dan kelola admin yang sedang login ke sistem" />
 
-    <!-- Controls -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="relative flex-1 max-w-md">
-        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-          <Search class="h-4 w-4" />
-        </span>
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Cari berdasarkan nama, username, atau IP..."
-          class="block w-full pl-10 pr-3 py-2 border border-input rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm"
-        />
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button v-if="selectedIds.length > 0 && auth.hasPermission('sessions.delete')" variant="destructive" size="sm" @click="handleBulkRevoke">
-          <Trash2 class="mr-2 h-4 w-4" />
-          Hentikan {{ selectedIds.length }} Sesi
-        </Button>
-        <Button v-if="auth.hasPermission('sessions.delete')" variant="outline" size="sm" @click="toggleSelectAll">
-          <component :is="isAllSelected ? CheckSquare : Square" class="mr-2 h-4 w-4" />
-          {{ isAllSelected ? 'Batal Pilih' : 'Pilih Semua' }}
-        </Button>
-        <Button variant="outline" size="sm" @click="fetchSessions" :disabled="isLoading">
-          <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isLoading }" />
-          Refresh
-        </Button>
-      </div>
-    </div>
+    <!-- Toolbar (Standardized) -->
+    <DataTableToolbar
+      v-model:search-model-value="searchQuery"
+      search-placeholder="Cari nama, username, atau IP..."
+      :is-loading="isLoading"
+      @refresh="fetchSessions"
+    >
+      <template #actions-end>
+        <div class="flex items-center gap-2">
+          <Button v-if="selectedIds.length > 0 && auth.hasPermission('sessions.delete')" variant="destructive" class="h-10 px-4 font-bold shadow-md" @click="handleBulkRevoke">
+            <Trash2 class="mr-2 h-4 w-4" />
+            Kick {{ selectedIds.length }} User
+          </Button>
+          <Button v-if="auth.hasPermission('sessions.delete')" variant="outline" class="h-10 px-3 shadow-sm" @click="toggleSelectAll">
+            <component :is="isAllSelected ? CheckSquare : Square" class="mr-2 h-4 w-4" />
+            {{ isAllSelected ? 'Batal Pilih' : 'Pilih Semua' }}
+          </Button>
+        </div>
+      </template>
+    </DataTableToolbar>
 
     <!-- Info Alert -->
-    <div class="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-500 shadow-sm">
+    <div class="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-500 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
       <ShieldAlert class="h-5 w-5 shrink-0" />
       <div class="text-xs">
         <p class="font-bold mb-1">Keamanan Sesi Real-time</p>
         <p class="opacity-90 leading-relaxed">
-          Sistem kini mendukung <strong>Instant Kick</strong>. Begitu sesi dihentikan, user tersebut tidak akan bisa melakukan aksi apa pun di CMS dan akan langsung diarahkan ke halaman login.
+          Sistem mendukung <strong>Instant Kick</strong>. Begitu sesi dihentikan, user tersebut tidak akan bisa melakukan aksi apa pun dan akan langsung diarahkan ke login.
         </p>
       </div>
     </div>
 
-    <div v-if="isLoading" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <SkeletonLoader v-for="i in 6" :key="i" class="h-32 w-full rounded-xl" />
+    <!-- Loading -->
+    <div v-if="isLoading" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <SkeletonLoader v-for="i in 8" :key="i" class="h-32 w-full rounded-xl" />
     </div>
 
-    <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <!-- Empty State -->
+    <div v-else-if="filteredSessions.length === 0" class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-16 text-muted-foreground bg-muted/5 animate-in fade-in zoom-in-95 duration-500">
+      <div class="bg-muted p-4 rounded-full mb-4">
+        <Monitor class="h-10 w-10 opacity-40" />
+      </div>
+      <p class="font-medium text-foreground">Tidak ada sesi aktif ditemukan</p>
+      <p class="text-xs mt-1">Coba gunakan kata kunci pencarian yang berbeda.</p>
+    </div>
+
+    <!-- Session Cards -->
+    <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <div 
         v-for="s in filteredSessions" 
         :key="s.id" 
@@ -229,25 +228,18 @@ onMounted(fetchSessions)
 
         <div class="mt-2 space-y-2.5 border-t border-border pt-3">
           <div class="flex justify-between items-center text-[11px]">
-            <span class="text-muted-foreground font-medium">IP ADDRESS</span>
+            <span class="text-muted-foreground font-medium uppercase tracking-wider">IP ADDRESS</span>
             <span class="font-bold text-foreground bg-muted px-2 py-0.5 rounded">{{ s.ip_address || 'Unknown' }}</span>
           </div>
           <div class="flex justify-between items-center text-[11px]">
-            <span class="text-muted-foreground font-medium">DEVICE / OS</span>
+            <span class="text-muted-foreground font-medium uppercase tracking-wider">DEVICE / OS</span>
             <span class="text-foreground font-semibold max-w-[150px] truncate" :title="s.user_agent">{{ parseUserAgent(s.user_agent) }}</span>
           </div>
           <div class="flex justify-between items-center text-[11px]">
-            <span class="text-muted-foreground font-medium">LOGIN TIME</span>
-            <span class="text-foreground">{{ new Date(s.created_at + 'Z').toLocaleString('id-ID') }}</span>
+            <span class="text-muted-foreground font-medium uppercase tracking-wider">LOGIN TIME</span>
+            <span class="text-foreground font-medium">{{ new Date(s.created_at + 'Z').toLocaleString('id-ID') }}</span>
           </div>
         </div>
-      </div>
-
-      <div v-if="filteredSessions.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-16 text-muted-foreground">
-        <div class="bg-muted p-4 rounded-full mb-4">
-          <Monitor class="h-10 w-10 opacity-40" />
-        </div>
-        <p class="font-medium">Tidak ada sesi aktif yang cocok dengan kriteria Anda.</p>
       </div>
     </div>
 

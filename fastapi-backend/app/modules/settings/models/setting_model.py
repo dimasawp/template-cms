@@ -8,6 +8,7 @@ class Setting(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     setting_key = Column(String(100), nullable=False, unique=True, index=True)
+    setting_group = Column(String(50), nullable=False, default="general", index=True)
     setting_value = Column(Text, nullable=True)
     description = Column(String(255), nullable=True)
     updated_at = Column(

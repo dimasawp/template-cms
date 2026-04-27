@@ -2,6 +2,8 @@ import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
+from fastapi import Request
+from sqlalchemy.orm import Session
 from app.core.config import settings
 
 
@@ -71,4 +73,29 @@ def decode_token_lenient(token: str) -> Optional[Dict[str, Any]]:
         )
         return payload
     except JWTError:
+        return None
+
+
+async def get_current_user_optional(request: Request, db: Session):
+    """
+    Optional authentication helper for public endpoints.
+    Returns User object if a valid token is present, otherwise None.
+    Does not raise exceptions (unlike get_current_user).
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    
+    token = auth_header.split(" ")[1]
+    payload = decode_token(token)
+    
+    if payload is None or payload.get("type") != "access":
+        return None
+
+    try:
+        user_id = int(payload.get("sub"))
+        from app.modules.users.models.user_model import User
+        user = db.query(User).filter(User.id == user_id, User.is_active == 1).first()
+        return user
+    except Exception:
         return None

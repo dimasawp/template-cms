@@ -9,6 +9,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const enableWebsockets = ref(true)
   const appVersion = ref('1.1.0')
   const isLoading = ref(false)
+  const isInitialized = ref(false)
 
   async function fetchSettings() {
     isLoading.value = true
@@ -25,6 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
       console.error('Failed to fetch settings:', error)
     } finally {
       isLoading.value = false
+      isInitialized.value = true
     }
   }
 
@@ -35,6 +37,7 @@ export const useSettingsStore = defineStore('settings', () => {
     enableWebsockets,
     appVersion,
     isLoading,
+    isInitialized,
     fetchSettings
   }
 })

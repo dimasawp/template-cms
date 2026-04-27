@@ -1,9 +1,9 @@
 <script setup>
 import { X } from 'lucide-vue-next'
 
-defineProps()
+defineProps(['title'])
 
-defineEmits()
+defineEmits(['close'])
 </script>
 
 <template>

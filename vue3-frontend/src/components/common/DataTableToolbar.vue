@@ -3,7 +3,7 @@ import { Search, RotateCw, Plus } from 'lucide-vue-next'
 import Input from '@/components/ui/Input.vue'
 import Button from '@/components/ui/Button.vue'
 
-defineProps(['searchPlaceholder', 'isLoading', 'showAddButton', 'addButtonLabel'])
+defineProps(['searchModelValue', 'searchPlaceholder', 'isLoading', 'showAddButton', 'addButtonLabel'])
 
 defineEmits(['update:searchModelValue'])
 </script>

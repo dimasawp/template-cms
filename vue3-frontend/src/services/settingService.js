@@ -5,4 +5,5 @@ export const settingService = {
   getRaw: () => api.get('/settings/raw'),
   update: (key, payload) => api.put(`/settings/${key}`, payload),
   bulkUpdate: (data) => api.post('/settings/bulk', { settings: data }),
+  reset: (group = 'system') => api.post(`/settings/reset?group=${group}`),
 }

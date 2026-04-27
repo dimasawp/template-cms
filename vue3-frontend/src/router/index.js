@@ -33,21 +33,21 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: '',          redirect: '/dashboard' },
-        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DashboardView.vue') },
-        { path: 'profile',   name: 'profile',   component: () => import('@/views/settings/ProfileView.vue') },
-        { path: 'components', name: 'components-doc', component: () => import('@/views/dashboard/ComponentsDocView.vue') },
+        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DashboardView.vue'), meta: { title: 'Dashboard' } },
+        { path: 'profile',   name: 'profile',   component: () => import('@/views/settings/ProfileView.vue'), meta: { title: 'User Profile' } },
+        { path: 'components', name: 'components-doc', component: () => import('@/views/dashboard/ComponentsDocView.vue'), meta: { title: 'UI Components' } },
         // Settings
-        { path: 'users',    name: 'users',    component: () => import('@/views/settings/UsersView.vue'),    meta: { permission: 'users.view' } },
-        { path: 'roles',    name: 'roles',    component: () => import('@/views/settings/RolesView.vue'),    meta: { permission: 'roles.view' } },
+        { path: 'users',    name: 'users',    component: () => import('@/views/settings/UsersView.vue'),    meta: { title: 'User Management', permission: 'users.view' } },
+        { path: 'roles',    name: 'roles',    component: () => import('@/views/settings/RolesView.vue'),    meta: { title: 'Role & Permission', permission: 'roles.view' } },
         {
           path: 'settings/audit-logs',
           name: 'audit-logs',
           component: () => import('@/views/settings/AuditLogView.vue'),
           meta: { title: 'Audit Trail', requiresAuth: true, roles: ['super_admin'] }
         },
-        { path: 'global-settings', name: 'global-settings', component: () => import('@/views/settings/GlobalSettingsView.vue'), meta: { permission: 'super_admin' } },
-        { path: 'active-sessions', name: 'active-sessions', component: () => import('@/views/settings/SessionsView.vue'), meta: { permission: 'super_admin' } },
-        { path: 'notifications',   name: 'notifications',   component: () => import('@/views/settings/NotificationsView.vue') },
+        { path: 'global-settings', name: 'global-settings', component: () => import('@/views/settings/GlobalSettingsView.vue'), meta: { title: 'Global Settings', permission: 'super_admin' } },
+        { path: 'active-sessions', name: 'active-sessions', component: () => import('@/views/settings/SessionsView.vue'), meta: { title: 'Active Sessions', permission: 'super_admin' } },
+        { path: 'notifications',   name: 'notifications',   component: () => import('@/views/settings/NotificationsView.vue'), meta: { title: 'Notifications' } },
       ],
     },
 

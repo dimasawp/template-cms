@@ -166,7 +166,7 @@ class AuthService:
         }
 
     @staticmethod
-    def update_user_profile(db: Session, user_id: int, username: str = None, full_name: str = None, email: str = None):
+    def update_user_profile(db: Session, user_id: int, username: str = None, full_name: str = None, email: str = None, request: Request = None):
         """Update personal profile data."""
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -211,13 +211,14 @@ class AuthService:
         AuditService.log(
             db=db, user_id=user_id, action="UPDATE_PROFILE", module="AUTH",
             item_id=str(user_id), description="User updated their personal profile",
-            payload_before=payload_before, payload_after=payload_after
+            payload_before=payload_before, payload_after=payload_after,
+            request=request
         )
 
         return user
 
     @staticmethod
-    def change_user_password(db: Session, user_id: int, old_password: str, new_password: str):
+    def change_user_password(db: Session, user_id: int, old_password: str, new_password: str, request: Request = None):
         """Verify old password and set new password."""
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -232,13 +233,14 @@ class AuthService:
         # Log activity
         AuditService.log(
             db=db, user_id=user_id, action="CHANGE_PASSWORD", module="AUTH",
-            item_id=str(user_id), description="User changed their own password"
+            item_id=str(user_id), description="User changed their own password",
+            request=request
         )
 
         return True
 
     @staticmethod
-    def update_avatar(db: Session, user_id: int, avatar_path: str):
+    def update_avatar(db: Session, user_id: int, avatar_path: str, request: Request = None):
         """Update user avatar path."""
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -247,6 +249,14 @@ class AuthService:
         user.avatar = avatar_path
         db.commit()
         db.refresh(user)
+
+        # Log activity
+        AuditService.log(
+            db=db, user_id=user_id, action="UPLOAD_AVATAR", module="AUTH",
+            item_id=str(user_id), description="User updated their profile picture",
+            request=request
+        )
+
         return user
 
     @staticmethod

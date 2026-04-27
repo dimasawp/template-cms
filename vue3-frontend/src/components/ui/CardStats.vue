@@ -1,5 +1,5 @@
 <script setup>
-defineProps(['description', 'icon', 'trend', 'trendValue'])
+defineProps(['title', 'value', 'description', 'icon', 'trend', 'trendValue'])
 </script>
 
 <template>
@@ -9,7 +9,7 @@ defineProps(['description', 'icon', 'trend', 'trendValue'])
       <slot name="icon" />
     </div>
     <div class="mt-2">
-      <p class="text-2xl font-bold">{{ value }}</p>
+      <p class="text-4xl font-black tracking-tight">{{ value }}</p>
       <p v-if="description || trendValue" class="mt-1 text-xs text-muted-foreground">
         <span v-if="trendValue" :class="{ 'text-green-600': trend === 'up', 'text-red-600': trend === 'down' }">{{ trendValue }}</span>
         {{ description }}

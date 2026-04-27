@@ -1,5 +1,5 @@
 <script setup>
-defineProps(['description'])
+defineProps(['title', 'description'])
 </script>
 <template>
   <div class="mb-6">

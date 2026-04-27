@@ -1,5 +1,8 @@
 from typing import Optional
 from sqlalchemy.orm import Session
+from fastapi import Request
+
+from app.modules.audit.services.audit_service import AuditService
 
 from app.modules._base.service import BaseService
 from app.modules.users.repositories.user_repository import UserRepository
@@ -41,7 +44,7 @@ class UserService(BaseService):
         return users, total
 
     @classmethod
-    def create_user(cls, db: Session, data) -> User:
+    def create_user(cls, db: Session, data, actor_id: int = None, request: Request = None) -> User:
         if UserRepository.get_by_username(db, data.username):
             raise ConflictException("Username already exists")
 
@@ -56,14 +59,25 @@ class UserService(BaseService):
         db.add(user)
         db.commit()
         db.refresh(user)
+
+        # Audit Log
+        AuditService.log(
+            db, actor_id, "CREATE", "USERS", 
+            item_id=str(user.id), 
+            description=f"Created user: {user.username}",
+            payload_after=cls.to_response(user, db),
+            request=request
+        )
+
         return user
 
     @classmethod
-    def update_user(cls, db: Session, user_id: int, data) -> User:
+    def update_user(cls, db: Session, user_id: int, data, actor_id: int = None, request: Request = None) -> User:
         user = UserRepository.get_by_id(db, user_id)
         if not user:
             raise NotFoundException("User not found")
 
+        payload_before = cls.to_response(user, db)
         update_data = data.model_dump(exclude_unset=True)
         
         # Check for last super_admin if attempting to deactivate or change role
@@ -93,14 +107,28 @@ class UserService(BaseService):
 
         db.commit()
         db.refresh(user)
+
+        # Audit Log
+        AuditService.log(
+            db, actor_id, "UPDATE", "USERS", 
+            item_id=str(user.id), 
+            description=f"Updated user: {user.username}",
+            payload_before=payload_before,
+            payload_after=cls.to_response(user, db),
+            request=request
+        )
+
         return user
 
     @classmethod
-    def delete_user(cls, db: Session, user_id: int) -> None:
+    def delete_user(cls, db: Session, user_id: int, actor_id: int = None, request: Request = None) -> None:
         user = UserRepository.get_by_id(db, user_id)
         if not user:
             raise NotFoundException("User not found")
             
+        payload_before = cls.to_response(user, db)
+        username = user.username
+
         role = db.query(Role).filter(Role.id == user.role_id).first()
         if role and role.name == "super_admin" and user.is_active:
             active_sa_count = db.query(User).join(Role).filter(Role.name == "super_admin", User.is_active == True).count()
@@ -110,20 +138,45 @@ class UserService(BaseService):
         db.delete(user)
         db.commit()
 
+        # Audit Log
+        AuditService.log(
+            db, actor_id, "DELETE", "USERS", 
+            item_id=str(user_id), 
+            description=f"Deleted user: {username}",
+            payload_before=payload_before,
+            request=request
+        )
+
     @classmethod
-    def reset_password(cls, db: Session, user_id: int, new_password: str) -> None:
+    def reset_password(cls, db: Session, user_id: int, new_password: str, actor_id: int = None, request: Request = None) -> None:
         user = UserRepository.get_by_id(db, user_id)
         if not user:
             raise NotFoundException("User not found")
         user.password_hash = get_password_hash(new_password)
         db.commit()
 
+        # Audit Log
+        AuditService.log(
+            db, actor_id, "RESET_PASSWORD", "USERS", 
+            item_id=str(user.id), 
+            description=f"Reset password for user: {user.username}",
+            request=request
+        )
+
     @classmethod
-    def change_password(cls, db: Session, user: User, old_password: str, new_password: str) -> None:
+    def change_password(cls, db: Session, user: User, old_password: str, new_password: str, request: Request = None) -> None:
         if not verify_password(old_password, user.password_hash):
             raise BadRequestException("Old password is incorrect")
         user.password_hash = get_password_hash(new_password)
         db.commit()
+
+        # Audit Log
+        AuditService.log(
+            db, user.id, "CHANGE_PASSWORD", "AUTH", 
+            item_id=str(user.id), 
+            description=f"User changed their own password",
+            request=request
+        )
 
     @classmethod
     def to_response(cls, user: User, db: Session) -> dict:
@@ -149,8 +202,11 @@ class UserService(BaseService):
             "username": user.username,
             "email": user.email,
             "full_name": user.full_name,
+            "role_id": user.role_id,
             "role_name": role.name if role else None,
             "avatar": user.avatar,
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         }

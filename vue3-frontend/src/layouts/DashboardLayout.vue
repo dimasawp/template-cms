@@ -14,6 +14,7 @@ import { useConfirmation } from '@/composables/useConfirmation'
 import { useRealtime } from '@/composables/useRealtime'
 import MaintenanceBanner from '@/components/common/MaintenanceBanner.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
+import Breadcrumbs from '@/components/common/Breadcrumbs.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -26,18 +27,41 @@ const { status: maintenanceStatus } = useRealtime()
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
 
-const menuItems = computed(() => [
-  { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' },
-  { name: 'Users', icon: Users, route: '/users', permission: 'users.view' },
-  { name: 'Roles', icon: Shield, route: '/roles', permission: 'roles.view' },
-  { name: 'Global Settings', icon: Settings, route: '/global-settings', permission: 'settings.view' },
-  { name: 'Active Sessions', icon: Monitor, route: '/active-sessions', permission: 'sessions.view' },
-  { name: 'Audit Trail', icon: History, route: '/settings/audit-logs', permission: 'audit.view' },
+const openGroups = ref(['Pengaturan'])
+
+const toggleGroup = (groupName) => {
+  if (openGroups.value.includes(groupName)) {
+    openGroups.value = openGroups.value.filter(g => g !== groupName)
+  } else {
+    openGroups.value.push(groupName)
+  }
+}
+
+const menuGroups = computed(() => [
+  {
+    name: null, // No label for the first group
+    items: [
+      { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' }
+    ]
+  },
+  {
+    name: 'Pengaturan',
+    items: [
+      { name: 'User Management', icon: Users, route: '/users', permission: 'users.view' },
+      { name: 'Role & Permission', icon: Shield, route: '/roles', permission: 'roles.view' },
+      { name: 'Global Settings', icon: Settings, route: '/global-settings', permission: 'settings.view' },
+      { name: 'Active Sessions', icon: Monitor, route: '/active-sessions', permission: 'sessions.view' },
+      { name: 'Audit Logs', icon: History, route: '/settings/audit-logs', permission: 'audit.view' },
+    ]
+  }
 ])
 
-const visibleMenu = computed(() =>
-  menuItems.value.filter(m => !m.permission || auth.hasPermission(m.permission))
-)
+const visibleGroups = computed(() => {
+  return menuGroups.value.map(group => ({
+    ...group,
+    items: group.items.filter(m => !m.permission || auth.hasPermission(m.permission))
+  })).filter(group => group.items.length > 0)
+})
 
 function isActive(path) {
   return route.path === path
@@ -85,21 +109,47 @@ onMounted(async () => {
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-        <router-link
-          v-for="item in visibleMenu"
-          :key="item.route"
-          :to="item.route"
-          :class="[
-            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-            isActive(item.route)
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-          ]"
-        >
-          <component :is="item.icon" class="h-5 w-5 shrink-0" />
-          <span v-if="sidebarOpen">{{ item.name }}</span>
-        </router-link>
+      <nav class="flex-1 overflow-y-auto custom-scrollbar py-4 px-2 space-y-4">
+        <div v-for="group in visibleGroups" :key="group.name || 'main'" class="space-y-1">
+          <!-- Group Label (Collapsible) -->
+          <div 
+            v-if="group.name && sidebarOpen" 
+            class="px-3 py-2 flex items-center justify-between cursor-pointer group/label hover:bg-accent/30 rounded-lg transition-all"
+            @click="toggleGroup(group.name)"
+          >
+            <span class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 group-hover/label:text-primary transition-colors">
+              {{ group.name }}
+            </span>
+            <ChevronDown 
+              class="h-4 w-4 text-muted-foreground/60 transition-transform duration-500"
+              :class="{ '-rotate-180': openGroups.includes(group.name) }"
+            />
+          </div>
+          
+          <!-- Items (Collapsible) -->
+          <div 
+            class="grid transition-all duration-200 ease-in-out"
+            :class="[!group.name || !sidebarOpen || openGroups.includes(group.name) ? 'grid-rows-[1fr] opacity-100 mt-1' : 'grid-rows-[0fr] opacity-0']"
+          >
+            <div class="overflow-hidden space-y-1 px-1">
+              <router-link
+                v-for="item in group.items"
+                :key="item.route"
+                :to="item.route"
+                :class="[
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors relative group',
+                  isActive(item.route)
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                ]"
+              >
+                <component :is="item.icon" class="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
+                <span v-if="sidebarOpen" class="truncate">{{ item.name }}</span>
+                <div v-if="isActive(item.route)" class="absolute left-0 w-1 h-5 bg-primary rounded-r-full"></div>
+              </router-link>
+            </div>
+          </div>
+        </div>
       </nav>
     </aside>
 
@@ -114,18 +164,23 @@ onMounted(async () => {
             <span class="text-lg font-bold text-primary truncate">{{ settingsStore.siteName }}</span>
             <button @click="mobileSidebarOpen = false"><X class="h-5 w-5" /></button>
           </div>
-          <nav class="py-4 px-2 space-y-1">
-            <router-link
-              v-for="item in visibleMenu" :key="item.route" :to="item.route"
-              :class="[
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
-                isActive(item.route) ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent'
-              ]"
-              @click="mobileSidebarOpen = false"
-            >
-              <component :is="item.icon" class="h-5 w-5 shrink-0" />
-              {{ item.name }}
-            </router-link>
+          <nav class="py-4 px-2 space-y-4 overflow-y-auto h-full">
+            <div v-for="group in visibleGroups" :key="group.name || 'main'" class="space-y-1">
+              <div v-if="group.name" class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                {{ group.name }}
+              </div>
+              <router-link
+                v-for="item in group.items" :key="item.route" :to="item.route"
+                :class="[
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+                  isActive(item.route) ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent'
+                ]"
+                @click="mobileSidebarOpen = false"
+              >
+                <component :is="item.icon" class="h-5 w-5 shrink-0" />
+                {{ item.name }}
+              </router-link>
+            </div>
           </nav>
         </aside>
       </Transition>
@@ -206,7 +261,8 @@ onMounted(async () => {
 
       <!-- Page content -->
       <main class="flex flex-1 flex-col overflow-hidden bg-muted/10">
-        <div class="flex-1 overflow-y-auto p-4 lg:p-6">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
+          <Breadcrumbs />
           <router-view />
         </div>
         

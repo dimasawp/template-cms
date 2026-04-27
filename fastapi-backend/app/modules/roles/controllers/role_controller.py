@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -62,11 +62,12 @@ async def get_role(
 @handle_errors
 async def create_role(
     data: RoleCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    _u: User = Depends(check_permission("roles.create")),
+    current_user: User = Depends(check_permission("roles.create")),
 ):
     """Create a new role."""
-    role = RoleService.create_role(db, data)
+    role = RoleService.create_role(db, data, actor_id=current_user.id, request=request)
     return success_response(data=RoleService.to_response(role, db), message="Role created", code=201)
 
 
@@ -75,11 +76,12 @@ async def create_role(
 async def update_role(
     role_id: int,
     data: RoleUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _u: User = Depends(check_permission("roles.update")),
+    current_user: User = Depends(check_permission("roles.update")),
 ):
     """Update an existing role."""
-    role = RoleService.update_role(db, role_id, data)
+    role = RoleService.update_role(db, role_id, data, actor_id=current_user.id, request=request)
     return success_response(data=RoleService.to_response(role, db), message="Role updated")
 
 
@@ -87,9 +89,10 @@ async def update_role(
 @handle_errors
 async def delete_role(
     role_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    _u: User = Depends(check_permission("roles.delete")),
+    current_user: User = Depends(check_permission("roles.delete")),
 ):
     """Delete a role."""
-    RoleService.delete_role(db, role_id)
+    RoleService.delete_role(db, role_id, actor_id=current_user.id, request=request)
     return success_response(message="Role deleted")

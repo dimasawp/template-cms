@@ -150,6 +150,12 @@ async def logout(
     if sid:
         try:
             AuthService.revoke_session(db, sid)
+            # Log activity
+            AuditService.log(
+                db=db, user_id=current_user.id, action="LOGOUT", module="AUTH",
+                item_id=str(current_user.id), description=f"User {current_user.username} logged out",
+                request=request
+            )
         except:
             pass # Already revoked or not found
 
@@ -212,12 +218,14 @@ async def bulk_revoke_sessions(
 @handle_errors
 async def update_my_profile(
     payload: ProfileUpdateRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update authenticated user's profile (name & email)."""
     user = AuthService.update_user_profile(
-        db, current_user.id, username=payload.username, full_name=payload.full_name, email=payload.email
+        db, current_user.id, username=payload.username, full_name=payload.full_name, email=payload.email,
+        request=request
     )
     return success_response(
         data={"username": user.username, "full_name": user.full_name, "email": user.email},
@@ -229,12 +237,14 @@ async def update_my_profile(
 @handle_errors
 async def change_my_password(
     payload: ChangePasswordRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Change authenticated user's password."""
     AuthService.change_user_password(
-        db, current_user.id, payload.old_password, payload.new_password
+        db, current_user.id, payload.old_password, payload.new_password,
+        request=request
     )
     return success_response(message="Password changed successfully")
 
@@ -242,11 +252,12 @@ async def change_my_password(
 @router.post("/avatar")
 @handle_errors
 async def upload_my_avatar(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Upload and set profile picture."""
     path = save_file(file, sub_dir="avatars")
-    AuthService.update_avatar(db, current_user.id, path)
+    AuthService.update_avatar(db, current_user.id, path, request=request)
     return success_response(data={"avatar": path}, message="Avatar uploaded successfully")

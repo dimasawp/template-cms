@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
 
-const props = defineProps(['maxWidth'])
+const props = defineProps(['open', 'title', 'maxWidth'])
 
 const emit = defineEmits()
 
@@ -41,7 +41,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleEsc))
           </div>
           
           <!-- Body -->
-          <div class="px-6 py-4 overflow-y-auto max-h-[80vh]">
+          <div class="px-6 py-4 overflow-y-auto max-h-[80vh] custom-scrollbar">
             <slot />
           </div>
           

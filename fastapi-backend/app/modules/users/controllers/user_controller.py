@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, UploadFile, File
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -60,11 +60,12 @@ async def get_user(
 @handle_errors
 async def create_user(
     data: UserCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    _user: User = Depends(check_permission("users.create")),
+    current_user: User = Depends(check_permission("users.create")),
 ):
     """Create a new user."""
-    user = UserService.create_user(db, data)
+    user = UserService.create_user(db, data, actor_id=current_user.id, request=request)
     return success_response(data=UserService.to_response(user, db), message="User created", code=201)
 
 
@@ -73,11 +74,12 @@ async def create_user(
 async def update_user(
     user_id: int,
     data: UserUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _user: User = Depends(check_permission("users.update")),
+    current_user: User = Depends(check_permission("users.update")),
 ):
     """Update user fields."""
-    user = UserService.update_user(db, user_id, data)
+    user = UserService.update_user(db, user_id, data, actor_id=current_user.id, request=request)
     return success_response(data=UserService.to_response(user, db), message="User updated")
 
 
@@ -85,11 +87,12 @@ async def update_user(
 @handle_errors
 async def delete_user(
     user_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    _user: User = Depends(check_permission("users.delete")),
+    current_user: User = Depends(check_permission("users.delete")),
 ):
     """Delete a user."""
-    UserService.delete_user(db, user_id)
+    UserService.delete_user(db, user_id, actor_id=current_user.id, request=request)
     return success_response(message="User deleted")
 
 
@@ -98,11 +101,12 @@ async def delete_user(
 async def reset_password(
     user_id: int,
     data: ResetPasswordRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    _user: User = Depends(check_permission("users.update")),
+    current_user: User = Depends(check_permission("users.update")),
 ):
     """Admin resets a user's password."""
-    UserService.reset_password(db, user_id, data.new_password)
+    UserService.reset_password(db, user_id, data.new_password, actor_id=current_user.id, request=request)
     return success_response(message="Password reset successfully")
 
 
@@ -110,13 +114,15 @@ async def reset_password(
 @handle_errors
 async def upload_avatar(
     user_id: int,
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _user: User = Depends(check_permission("users.update")),
+    current_user: User = Depends(check_permission("users.update")),
 ):
     """Upload or replace user avatar."""
     from app.modules.users.repositories.user_repository import UserRepository
     from app.exceptions import NotFoundException
+    from app.modules.audit.services.audit_service import AuditService
 
     user = UserRepository.get_by_id(db, user_id)
     if not user:
@@ -128,6 +134,15 @@ async def upload_avatar(
     path = save_file(file, sub_dir="avatars")
     user.avatar = path
     db.commit()
+
+    # Audit Log
+    AuditService.log(
+        db, current_user.id, "UPLOAD_AVATAR", "USERS", 
+        item_id=str(user_id), 
+        description=f"Uploaded avatar for user: {user.username}",
+        request=request
+    )
+
     return success_response(data={"avatar": path}, message="Avatar uploaded")
 
 
@@ -135,9 +150,10 @@ async def upload_avatar(
 @handle_errors
 async def change_own_password(
     data: ChangePasswordRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """User changes their own password."""
-    UserService.change_password(db, current_user, data.old_password, data.new_password)
+    UserService.change_password(db, current_user, data.old_password, data.new_password, request=request)
     return success_response(message="Password changed successfully")

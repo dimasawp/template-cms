@@ -37,7 +37,7 @@ class MediaService:
 
         # 3. Log activity
         AuditService.log(
-            db=db, user_id=user_id, action="UPLOAD_MEDIA", module="MEDIA",
+            db=db, user_id=user_id, action="UPLOAD", module="MEDIA",
             item_id=str(new_media.id), description=f"Uploaded file: {meta['original_name']}",
             request=request
         )
@@ -49,16 +49,25 @@ class MediaService:
         return db.query(Media).filter(Media.id == media_id, Media.deleted_at == None).first()
 
     @staticmethod
-    def delete_media(db: Session, media_id: int, user_id: Optional[int] = None) -> bool:
+    def delete_media(db: Session, media_id: int, user_id: Optional[int] = None, request = None) -> bool:
         media = MediaService.get_media(db, media_id)
         if not media:
             return False
         
+        filename = media.original_name
+
         # In a soft-delete policy, we usually keep the physical file 
         # for a while or move it to a 'trash' folder. 
         # For now, we'll just mark the DB record as deleted.
         from app.helpers.date_helper import get_now_wib
         media.deleted_at = get_now_wib()
         db.commit()
+
+        # Log activity
+        AuditService.log(
+            db=db, user_id=user_id, action="DELETE", module="MEDIA",
+            item_id=str(media_id), description=f"Deleted file: {filename}",
+            request=request
+        )
         
         return True
