@@ -1,290 +1,92 @@
-# CMS Template — Backend API
+# CMS Template — Backend API (FastAPI)
 
-REST API backend built with **FastAPI**, **SQLAlchemy**, and **MySQL**. Provides authentication, role-based access control, audit logging, media management, and real-time notifications out of the box.
+REST API backend yang tangguh dan modular, dibangun dengan **FastAPI**, **SQLAlchemy 2.0**, dan **MySQL**. Mendukung RBAC tingkat lanjut, audit logging, manajemen sesi aktif, dan standarisasi waktu lokal (WIB).
 
-## 🏗 Project Structure
+## 🏗 Struktur Proyek
 
 ```
 fastapi-backend/
-├── main.py                          # App entry point, middleware, WebSocket
-├── requirements.txt                 # Python dependencies
-├── pytest.ini                       # Test configuration
-├── .env.example                     # Environment template
-│
+├── alembic/                         # Database Migration History
 ├── app/
-│   ├── core/
-│   │   ├── config.py                # Pydantic Settings (from .env)
-│   │   ├── database.py              # SQLAlchemy engine & session
-│   │   ├── security.py              # JWT creation, password hashing
-│   │   ├── dependencies.py          # Auth & permission FastAPI dependencies
-│   │   ├── logger.py                # Rotating file logger
-│   │   ├── websocket.py             # WebSocket connection manager
-│   │   └── storage/                 # Multi-provider file storage
-│   │       ├── base.py              # Abstract storage interface
-│   │       ├── manager.py           # Storage provider factory
-│   │       ├── local_project.py     # Save to ./storage/uploads/
-│   │       └── local_system.py      # Save to absolute system path
-│   │
-│   ├── modules/                     # Auto-discovered feature modules
-│   │   ├── __init__.py              # Router auto-discovery registry
-│   │   ├── _base/                   # Base repository & service classes
-│   │   ├── auth/                    # Login, Register, JWT refresh, Sessions
-│   │   ├── users/                   # User CRUD, profile, avatar
-│   │   ├── roles/                   # Role & Permission CRUD, matrix
-│   │   ├── audit/                   # Audit trail (read-only)
-│   │   ├── notifications/           # In-app notifications
-│   │   ├── media/                   # File upload & management
-│   │   └── settings/                # Global app settings
-│   │
-│   ├── seeds/
-│   │   └── seed.py                  # Database seeder
-│   │
-│   ├── helpers/
-│   │   ├── response.py              # Standard JSON envelope helpers
-│   │   └── file_handler.py          # File validation utilities
-│   │
-│   └── exceptions/
-│       ├── __init__.py              # Custom exception classes
-│       └── handler.py               # Global exception handlers
-│
-├── tests/
-│   ├── conftest.py                  # SQLite in-memory fixtures
-│   └── integration/                 # 23 integration test cases
-│       ├── test_auth.py
-│       ├── test_users.py
-│       ├── test_roles.py
-│       ├── test_audit.py
-│       ├── test_notifications.py
-│       ├── test_media.py
-│       └── test_settings.py
-│
-└── storage/                         # Uploaded files (gitignored)
+│   ├── core/                        # Konfigurasi, Database, Security, WebSocket
+│   ├── modules/                     # Feature Modules (Auto-registered)
+│   ├── helpers/                     # Response formats, Date helpers (WIB)
+│   ├── seeds/                       # Master data seeder
+│   └── exceptions/                  # Global error handling
+├── storage/                         # Local file storage (uploads)
+├── tests/                           # Integration tests (Pytest)
+├── main.py                          # Entry point
+└── alembic.ini                      # Alembic configuration
 ```
 
-## 🚀 Getting Started
+## 🚀 Persiapan Awal
 
-### 1. Install Dependencies
-
+### 1. Instalasi Dependensi
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
-
+### 2. Konfigurasi Environment
 ```bash
 cp .env.example .env
 ```
+Edit `.env` dan sesuaikan kredensial database Anda.
 
-Edit `.env` with your database credentials:
-
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=db_cms_template
-
-# Security — MUST change in production
-SECRET_KEY=your-random-secret-key-here
-
-# Storage mode: local_project | local_system | cloud
-STORAGE_MODE=local_project
-```
-
-### 3. Seed Database
-
+### 3. Setup Database (Migrasi & Seed)
+**Penting:** Selalu gunakan Alembic untuk sinkronisasi tabel.
 ```bash
+# Membuat tabel awal & master data
 python -m app.seeds.seed
+
+# Menjalankan migrasi terbaru
+alembic upgrade head
 ```
 
-This will:
-- **Non-production**: Drop all tables → recreate → seed fresh data (sequential IDs)
-- **Production**: Only create missing tables & insert missing seed rows
-
-### 4. Run Development Server
-
+### 4. Jalankan Server
 ```bash
 uvicorn main:app --reload
 ```
+API dapat diakses di `http://localhost:8000` dan Swagger UI di `http://localhost:8000/docs`.
 
-API available at `http://localhost:8000` · Swagger UI at `http://localhost:8000/docs`
+## 🕒 Standarisasi Waktu (WIB)
 
-## 🗄 Database Seeder
+Seluruh sistem ini menggunakan waktu **WIB (UTC+7)** sebagai standar penyimpanan di database.
+- **Helper**: Gunakan `app.helpers.date_helper.get_now_wib()` untuk mendapatkan waktu saat ini dalam format WIB.
+- **Database**: Kolom `created_at` dan `updated_at` otomatis menggunakan WIB dan disimpan sebagai *naive datetime* (tanpa timezone info) untuk kompatibilitas MySQL `DATETIME`.
 
-The seeder (`app/seeds/seed.py`) creates initial data:
+## 🗄 Manajemen Migrasi (Alembic)
 
-### Roles (2)
+Setiap kali Anda mengubah model di `app/modules/.../models/`, ikuti langkah ini:
 
-| ID | Name          | Permissions                                     |
-|----|---------------|-------------------------------------------------|
-| 1  | `super_admin` | All 14 permissions                              |
-| 2  | `admin`       | All except `roles.delete` and `settings.update` |
+1.  **Generate Migration**:
+    ```bash
+    alembic revision --autogenerate -m "deskripsi_perubahan"
+    ```
+2.  **Review**: Cek file baru di `alembic/versions/`.
+3.  **Apply**:
+    ```bash
+    alembic upgrade head
+    ```
 
-### Permissions (14)
+## 🔐 Keamanan & RBAC
 
-| Module        | Permissions                                  |
-|---------------|----------------------------------------------|
-| Users         | `users.view`, `users.create`, `users.update`, `users.delete` |
-| Roles         | `roles.view`, `roles.create`, `roles.update`, `roles.delete` |
-| Audit         | `audit.view`                                 |
-| Notifications | `notifications.view`                         |
-| Settings      | `settings.view`, `settings.update`           |
-| Sessions      | `sessions.view`, `sessions.delete`           |
+Sistem ini menggunakan **Permission-Based Access Control**:
+- **Permissions**: Izin spesifik seperti `users.create`, `roles.delete`.
+- **Roles**: Kumpulan izin (Super Admin, Admin, dll).
+- **Session Validation**: Setiap request divalidasi terhadap `user_sessions` di database. Jika sesi dihapus/di-revoke oleh admin, user akan langsung ter-logout secara otomatis.
 
-### Users (2)
+## 📁 Media & Storage
 
-| Username     | Email                   | Password   | Role         |
-|--------------|-------------------------|------------|--------------|
-| `superadmin` | superadmin@example.com  | `admin123` | super_admin  |
-| `admin`      | admin@example.com       | `admin123` | admin        |
-
-### Settings (3)
-
-| Key                     | Default Value  | Description                     |
-|-------------------------|----------------|---------------------------------|
-| `app_name`              | CMS Template   | Application display name        |
-| `maintenance_mode`      | false          | Enable system-wide maintenance  |
-| `registration_enabled`  | true           | Allow public self-registration  |
-
-## 🔌 API Endpoints
-
-### Auth (`/api/v1/auth`)
-
-| Method | Path              | Auth | Description                    |
-|--------|-------------------|------|--------------------------------|
-| POST   | `/login`          | ✗    | Login & get JWT tokens         |
-| POST   | `/register`       | ✗    | Self-register new account      |
-| POST   | `/refresh`        | ✗    | Refresh access token           |
-| POST   | `/logout`         | ✓    | Revoke current session         |
-| GET    | `/me`             | ✓    | Get current user profile       |
-| PUT    | `/me/profile`     | ✓    | Update profile (name, email)   |
-| PUT    | `/me/password`    | ✓    | Change password                |
-| POST   | `/me/avatar`      | ✓    | Upload avatar                  |
-| GET    | `/sessions`       | ✓    | List all active sessions       |
-| DELETE | `/sessions/{id}`  | ✓    | Revoke specific session        |
-| POST   | `/forgot-password`| ✗    | Send password reset email      |
-
-### Users (`/api/v1/users`)
-
-| Method | Path          | Permission     | Description          |
-|--------|---------------|----------------|----------------------|
-| GET    | `/`           | `users.view`   | List users (paginated) |
-| POST   | `/`           | `users.create` | Create user          |
-| PUT    | `/{id}`       | `users.update` | Update user          |
-| DELETE | `/{id}`       | `users.delete` | Delete user          |
-
-### Roles (`/api/v1/roles`)
-
-| Method | Path              | Permission     | Description           |
-|--------|-------------------|----------------|-----------------------|
-| GET    | `/`               | `roles.view`   | List roles (paginated) |
-| GET    | `/permissions`    | `roles.view`   | List all permissions  |
-| GET    | `/{id}`           | `roles.view`   | Get role detail       |
-| POST   | `/`               | `roles.create` | Create role           |
-| PUT    | `/{id}`           | `roles.update` | Update role           |
-| DELETE | `/{id}`           | `roles.delete` | Delete role           |
-
-### Audit (`/api/v1/audit`)
-
-| Method | Path | Permission   | Description               |
-|--------|------|--------------|---------------------------|
-| GET    | `/`  | `audit.view` | List audit logs (paginated) |
-
-### Notifications (`/api/v1/notifications`)
-
-| Method | Path            | Auth | Description              |
-|--------|-----------------|------|--------------------------|
-| GET    | `/`             | ✓    | List user notifications  |
-| GET    | `/unread-count` | ✓    | Get unread badge count   |
-| PUT    | `/{id}/read`    | ✓    | Mark single as read      |
-| PUT    | `/read-all`     | ✓    | Mark all as read         |
-
-### Media (`/api/v1/media`)
-
-| Method | Path       | Auth | Description               |
-|--------|------------|------|---------------------------|
-| POST   | `/upload`  | ✓    | Upload file (multipart)   |
-
-### Settings (`/api/v1/settings`)
-
-| Method | Path       | Permission        | Description         |
-|--------|------------|-------------------|---------------------|
-| GET    | `/`        | `settings.view`   | Get all settings    |
-| PUT    | `/`        | `settings.update` | Update settings     |
-| GET    | `/public`  | ✗                 | Public settings     |
-
-### WebSocket
-
-| Path                         | Description                  |
-|------------------------------|------------------------------|
-| `ws://localhost:8000/api/v1/ws/notifications` | Real-time notification push |
+- **Auto-Organization**: File diupload ke `storage/uploads/YYYY/MM/`.
+- **Soft Delete**: Menghapus media hanya akan menandai `deleted_at`, file fisik tetap ada kecuali dilakukan *hard delete*.
 
 ## 🧪 Testing
 
-Tests use **SQLite in-memory** database for speed and isolation — your real database is never touched.
-
+Gunakan Pytest untuk menjalankan tes integrasi:
 ```bash
-# Run all tests
 pytest -v
-
-# Run specific module
-pytest -v tests/integration/test_auth.py
-
-# Run with output
-pytest -v -s
 ```
+Tes menggunakan **SQLite In-Memory**, sehingga database asli Anda tetap aman.
 
-**Test coverage**: 23 integration tests across 7 modules (Auth, Users, Roles, Audit, Notifications, Media, Settings).
-
-## 🛡 Middleware
-
-| Middleware         | Description                                          |
-|--------------------|------------------------------------------------------|
-| CORS               | Configurable allowed origins via `CORS_ORIGINS`     |
-| Request Logging    | Logs 4xx/5xx with request ID, IP, path              |
-| Maintenance Mode   | Blocks non-admin requests when `maintenance_mode=true` |
-
-## 📂 Storage Modes
-
-Configured via `STORAGE_MODE` in `.env`:
-
-| Mode             | Description                                       |
-|------------------|---------------------------------------------------|
-| `local_project`  | Save to `./storage/uploads/` (default)           |
-| `local_system`   | Save to absolute path (`SYSTEM_STORAGE_PATH`)    |
-| `cloud`          | Placeholder for S3/GCS (falls back to local)     |
-
-## 🔧 Adding a New Module
-
-1. Create folder under `app/modules/your_module/`
-2. Add subdirectories: `controllers/`, `models/`, `services/`, `repositories/`, `schemas/`
-3. Create `your_module_controller.py` with `router = APIRouter(prefix="/api/v1/your-module")`
-4. The auto-discovery in `app/modules/__init__.py` will automatically register it
-
-No manual registration in `main.py` required.
-
-## 🛡 Soft Delete
-
-Integrated via `BaseRepository`. All key models (Users, Roles, Permissions, Media, Settings) include a `deleted_at` column.
-
-- **Standard Query**: Automatically filters out records where `deleted_at` is not null.
-- **Hard Delete**: Use the `hard_delete(id)` method in the repository to permanently remove data.
-- **Filtering**: `AuditLog` is excluded from soft delete to ensure data integrity.
-
-## 📁 Media Storage Organization
-
-Files are automatically organized by date to prevent folder congestion and improve retrieval efficiency:
-
-- **Path Format**: `storage/uploads/YYYY/MM/filename.ext`
-- **Example**: `storage/uploads/2024/04/image_123.webp`
-- **Visibility**: Directories are created on-the-fly when the first file of a new month is uploaded.
-
-## 🏷 Version Management
-
-This system's version (Current: `1.2.0`) is controlled centrally:
-1.  Set the version in `app/core/config.py` (`APP_VERSION`).
-2.  It is exposed via `/api/v1/settings` to the frontend.
-3.  Optional: Override via `APP_VERSION` in your `.env` file.
-
-
+## 🏷 Versi Sistem
+Versi dikontrol secara terpusat di `app/core/config.py` (`APP_VERSION`). Frontend akan otomatis menyesuaikan tampilan footer berdasarkan nilai ini.
