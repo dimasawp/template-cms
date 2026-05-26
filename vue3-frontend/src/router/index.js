@@ -36,6 +36,12 @@ const router = createRouter({
         { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/DashboardView.vue'), meta: { title: 'Dashboard' } },
         { path: 'profile',   name: 'profile',   component: () => import('@/views/settings/ProfileView.vue'), meta: { title: 'User Profile' } },
         { path: 'components', name: 'components-doc', component: () => import('@/views/dashboard/ComponentsDocView.vue'), meta: { title: 'UI Components' } },
+        // CMS
+        { path: 'categories', name: 'categories', component: () => import('@/views/cms/CategoriesView.vue'), meta: { title: 'Manajemen Kategori', permission: 'categories.view' } },
+        { path: 'posts',      name: 'posts',      component: () => import('@/views/cms/PostsView.vue'),      meta: { title: 'Manajemen Postingan', permission: 'posts.view' } },
+        { path: 'posts/create', name: 'posts-create', component: () => import('@/views/cms/PostsFormView.vue'), meta: { title: 'Tulis Postingan', permission: 'posts.create' } },
+        { path: 'posts/:id/edit', name: 'posts-edit', component: () => import('@/views/cms/PostsFormView.vue'), meta: { title: 'Edit Postingan', permission: 'posts.update' } },
+        
         // Settings
         { path: 'users',    name: 'users',    component: () => import('@/views/settings/UsersView.vue'),    meta: { title: 'User Management', permission: 'users.view' } },
         { path: 'roles',    name: 'roles',    component: () => import('@/views/settings/RolesView.vue'),    meta: { title: 'Role & Permission', permission: 'roles.view' } },

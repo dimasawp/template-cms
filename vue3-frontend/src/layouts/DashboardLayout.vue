@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { notificationService } from '@/services/notificationService'
 import Toaster from '@/components/ui/Toaster.vue'
 import {
-  LayoutDashboard, Users, Shield, Bell, Menu, X, LogOut, Sun, Moon, Settings, Monitor, History, ChevronDown
+  LayoutDashboard, Users, Shield, Bell, Menu, X, LogOut, Sun, Moon, Settings, Monitor, History, ChevronDown, FolderTree, FileText
 } from 'lucide-vue-next'
 import Avatar from '@/components/ui/Avatar.vue'
 import { useConfirmation } from '@/composables/useConfirmation'
@@ -27,7 +27,7 @@ const { status: maintenanceStatus } = useRealtime()
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
 
-const openGroups = ref(['Pengaturan'])
+const openGroups = ref(['Konten Web', 'Pengaturan'])
 
 const toggleGroup = (groupName) => {
   if (openGroups.value.includes(groupName)) {
@@ -42,6 +42,13 @@ const menuGroups = computed(() => [
     name: null, // No label for the first group
     items: [
       { name: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' }
+    ]
+  },
+  {
+    name: 'Konten Web',
+    items: [
+      { name: 'Postingan', icon: FileText, route: '/posts', permission: 'posts.view' },
+      { name: 'Kategori', icon: FolderTree, route: '/categories', permission: 'categories.view' }
     ]
   },
   {
@@ -241,13 +248,8 @@ onMounted(async () => {
               </div>
               <ChevronDown class="hidden lg:block h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </router-link>
-            
-            <button 
-              @click="handleLogout" 
-              class="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors ml-1" 
-              title="Logout"
-            >
-              <LogOut class="h-4 w-4" />
+            <button @click="handleLogout" class="p-2 ml-1 text-destructive hover:bg-destructive/10 rounded-md" title="Keluar">
+              <LogOut class="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -261,9 +263,11 @@ onMounted(async () => {
 
       <!-- Page content -->
       <main class="flex flex-1 flex-col overflow-hidden bg-muted/10">
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
-          <Breadcrumbs />
-          <router-view />
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div class="p-4 lg:p-6 pb-20">
+            <Breadcrumbs />
+            <router-view />
+          </div>
         </div>
         
         <!-- Footer -->

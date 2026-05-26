@@ -54,6 +54,39 @@ app = FastAPI(
 )
 
 # CORS
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler('request_debug.log')
+logger.addHandler(file_handler)
+
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class DebugMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if "/media/upload" in request.url.path:
+            logger.info(f"Incoming request to {request.url.path}")
+            logger.info(f"Headers: {dict(request.headers)}")
+        response = await call_next(request)
+        if "/media/upload" in request.url.path:
+            # Read response body
+            body = b""
+            async for chunk in response.body_iterator:
+                body += chunk
+            logger.info(f"Response status: {response.status_code}")
+            logger.info(f"Response body: {body.decode(errors='replace')}")
+            # Reconstruct response so client gets it
+            from fastapi.responses import Response
+            return Response(
+                content=body, 
+                status_code=response.status_code, 
+                headers=dict(response.headers),
+                media_type=response.media_type
+            )
+        return response
+
+app.add_middleware(DebugMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -64,7 +97,7 @@ app.add_middleware(
 
 # Serve uploaded files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-app.mount("/storage", StaticFiles(directory=settings.UPLOAD_DIR), name="storage")
+app.mount("/storage/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="storage")
 
 # ── Logging ──────────────────────────────────────────────────────────
 

@@ -1,0 +1,2 @@
+Keys: ['path', 'source', 'files[0]']
+Dict: {'path': '', 'source': 'default', 'files[0]': UploadFile(filename='image.png', size=300522, headers=Headers({'content-disposition': 'form-data; name="files[0]"; filename="image.png"', 'content-type': 'image/png'}))}

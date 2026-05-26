@@ -99,3 +99,99 @@
     background: hsl(var(--muted-foreground) / 0.2);
   }
 }
+
+/* ── Jodit Editor Theme Overrides ── */
+.jodit-container, .jodit_theme_default, .jodit_theme_dark,
+.jodit-dialog__panel {
+  /* Override default and dark theme variables comprehensively */
+  --jd-color-background-default: hsl(var(--card)) !important;
+  --jd-color-text-default: hsl(var(--foreground)) !important;
+  --jd-color-border: hsl(var(--border)) !important;
+  --jd-color-panel: hsl(var(--muted)) !important;
+  
+  --jd-dark-background-color: hsl(var(--card)) !important;
+  --jd-dark-toolbar-color: hsl(var(--card)) !important;
+  --jd-dark-background-ligher: hsl(var(--muted)) !important;
+  
+  border-color: hsl(var(--border)) !important;
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: var(--radius) !important;
+}
+
+.jodit-container > .jodit-toolbar__box {
+  background-color: hsl(var(--card)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  position: sticky !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  transform: none !important;
+  z-index: 40 !important;
+  border-radius: 0 !important;
+}
+
+/* ── Fix Dropdown Menus / Popups ── */
+.jodit-ui-popup, .jodit-popup, .jodit-ui-popup__content, .jodit-ui-list, .jodit-dialog__panel {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+.jodit-ui-button__text, .jodit-ui-button__icon {
+  color: hsl(var(--foreground)) !important;
+  fill: hsl(var(--foreground)) !important;
+}
+
+/* ── Fix Inputs and Textareas in Popups ── */
+.jodit-container input, .jodit-container textarea,
+.jodit-dialog input, .jodit-dialog textarea,
+.jodit-popup input, .jodit-popup textarea {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.jodit-workplace {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.jodit-wysiwyg {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.jodit-ui-button__text {
+  color: hsl(var(--foreground)) !important;
+}
+
+.jodit-ui-button__icon {
+  fill: hsl(var(--foreground)) !important;
+}
+
+.jodit-ui-button:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+/* ── Restore Tailwind CSS Resets inside Jodit ── */
+.jodit-wysiwyg ul, .jodit-dialog ul {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+}
+.jodit-wysiwyg ol, .jodit-dialog ol {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+}
+.jodit-wysiwyg li, .jodit-dialog li {
+  display: list-item !important;
+}
+
+/* ── Fix Iframe visibility inside Jodit ── */
+.jodit-wysiwyg iframe, .jodit-dialog iframe,
+.jodit-wysiwyg jodit-media, .jodit-dialog jodit-media,
+.jodit-wysiwyg .jodit-media, .jodit-dialog .jodit-media {
+  display: block !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  min-height: 315px !important;
+  background-color: #000 !important; /* Make sure it's not transparent */
+}

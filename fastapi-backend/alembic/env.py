@@ -22,6 +22,8 @@ from app.modules.settings.models.setting_model import Setting
 from app.modules.auth.models.session_model import UserSession
 from app.modules.media.models.media_model import Media
 from app.modules.notifications.models.notification_model import Notification
+from app.modules.categories.models.category_model import Category
+from app.modules.posts.models.post_model import Post
 # ---------------------------------------------
 
 # this is the Alembic Config object, which provides

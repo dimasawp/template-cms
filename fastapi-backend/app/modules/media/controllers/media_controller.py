@@ -18,11 +18,22 @@ router = APIRouter(prefix="/api/v1/media", tags=["Media"])
 @handle_errors
 async def upload_media(
     request: Request,
-    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Upload a file to the configured storage provider."""
+    form = await request.form()
+    
+    with open("debug_upload.txt", "w") as f:
+        f.write(f"Keys: {list(form.keys())}\n")
+        f.write(f"Dict: {dict(form)}\n")
+        
+    file = form.get("file") or form.get("files[0]") or form.get("files")
+    
+    if not file or not hasattr(file, "filename"):
+        keys = list(form.keys())
+        raise HTTPException(status_code=400, detail=f"No valid file uploaded. Keys: {keys}, Type: {type(file).__name__}")
+        
     media = MediaService.upload_media(
         db, file, user_id=current_user.id, request=request
     )

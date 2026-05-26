@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button.vue'
 
 defineProps(['searchModelValue', 'searchPlaceholder', 'isLoading', 'showAddButton', 'addButtonLabel'])
 
-defineEmits(['update:searchModelValue'])
+defineEmits(['update:searchModelValue', 'add', 'refresh'])
 </script>
 
 <template>
