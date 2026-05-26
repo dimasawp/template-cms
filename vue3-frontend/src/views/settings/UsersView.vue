@@ -128,7 +128,7 @@ async function handleSave() {
 }
 
 async function handleDelete(user) {
-  const ok = await confirm.confirm({ title: 'Hapus User', message: `Yakin ingin menghapus "${user.username}"?`, variant: 'destructive' })
+  const ok = await confirm.confirm({ title: 'Delete User', message: `Are you sure you want to delete "${user.username}"?`, variant: 'destructive' })
   if (!ok) return
   try {
     await userService.delete(user.id)
@@ -143,15 +143,15 @@ async function handleDelete(user) {
 
 <template>
   <div>
-    <PageHeader title="User Management" description="Kelola pengguna sistem" />
+    <PageHeader title="User Management" description="Manage system users" />
 
     <!-- Toolbar -->
     <DataTableToolbar
       v-model:search-model-value="filters.search"
-      search-placeholder="Cari user (nama, email, username)..."
+      search-placeholder="Search users (name, email, username)..."
       :is-loading="isLoading"
       :show-add-button="auth.hasPermission('users.create')"
-      add-button-label="Tambah User"
+      add-button-label="Add User"
       @refresh="fetchItems"
       @add="openCreate"
     >
@@ -172,18 +172,18 @@ async function handleDelete(user) {
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Filter User" @close="close" />
+             <PopoverHeader title="Filter Users" @close="close" />
 
             <div class="space-y-5">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Berdasarkan Role</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">By Role</Label>
                 <div class="max-h-48 overflow-y-auto pr-1 custom-scrollbar space-y-1">
                   <button 
                     @click="handleFilterRole('')"
                     class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
                     :class="!filters.role_id ? 'bg-accent text-primary font-bold' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
                   >
-                    Semua Role
+                    All Roles
                     <div v-if="!filters.role_id" class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(79,70,229,0.4)]"></div>
                   </button>
 
@@ -201,10 +201,10 @@ async function handleDelete(user) {
               </div>
 
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Status Akun</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Account Status</Label>
                 <div class="grid grid-cols-3 gap-2">
                   <button 
-                    v-for="s in [{id:'', label:'SEMUA'}, {id:'active', label:'AKTIF'}, {id:'inactive', label:'NONAKTIF'}]" 
+                    v-for="s in [{id:'', label:'ALL'}, {id:'active', label:'ACTIVE'}, {id:'inactive', label:'INACTIVE'}]" 
                     :key="s.id"
                     @click="handleFilterStatus(s.id)"
                     class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
@@ -231,20 +231,20 @@ async function handleDelete(user) {
               class="h-10 px-3 flex items-center gap-2 border-input hover:bg-accent transition-colors shadow-sm text-foreground"
             >
               <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-              <span>Urutkan</span>
+              <span>Sort</span>
               <ChevronDown class="h-3 w-3 transition-transform" :class="{'rotate-180': isOpen}" />
             </Button>
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Urutkan Data" @close="close" />
+            <PopoverHeader title="Sort Data" @close="close" />
 
             <div class="space-y-4">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Berdasarkan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Sort By</Label>
                 <div class="space-y-1">
                   <button 
-                    v-for="f in [{id:'full_name', label:'Nama Lengkap'}, {id:'username', label:'Username'}, {id:'email', label:'Email'}, {id:'created_at', label:'Tgl Daftar'}]" 
+                    v-for="f in [{id:'full_name', label:'Full Name'}, {id:'username', label:'Username'}, {id:'email', label:'Email'}, {id:'created_at', label:'Date Registered'}]" 
                     :key="f.id"
                     @click="setSortField(f.id)"
                     class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
@@ -257,7 +257,7 @@ async function handleDelete(user) {
               </div>
 
               <div class="pt-2 border-t border-slate-100">
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Urutan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Direction</Label>
                 <div class="grid grid-cols-2 gap-2">
                   <button 
                     @click="setSortDirection('asc')"
@@ -287,7 +287,7 @@ async function handleDelete(user) {
       <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-300">
         <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-wider shadow-sm">
           <Filter class="h-3 w-3" />
-          Filter Aktif
+          Active Filters
         </div>
 
         <div v-if="filters.role_id" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
@@ -303,7 +303,7 @@ async function handleDelete(user) {
         </div>
 
         <button @click="Object.keys(filters).forEach(k => { if(k !== 'search') delete filters[k] }); fetchItems()" class="text-[11px] text-muted-foreground hover:text-destructive font-bold px-2 py-1.5 rounded-lg hover:bg-destructive/5 transition-all ml-1">
-          Hapus Semua
+          Clear All
         </button>
       </div>
 
@@ -315,12 +315,12 @@ async function handleDelete(user) {
     <EmptyState 
       v-if="!isLoading && users.length === 0" 
       :icon="Search" 
-      title="Tidak ada pengguna ditemukan" 
-      description="Coba ubah kriteria pencarian atau filter Anda untuk menemukan pengguna yang dicari."
+      title="No users found" 
+      description="Try changing your search criteria or filters to find the users you are looking for."
     >
       <template #actions>
         <Button variant="outline" size="sm" @click="Object.keys(filters).forEach(k => delete filters[k]); fetchItems()">
-          Reset Semua Filter
+          Reset All Filters
         </Button>
       </template>
     </EmptyState>
@@ -356,7 +356,7 @@ async function handleDelete(user) {
               @click="setSortField('created_at')"
             >
               <div class="flex items-center gap-2">
-                Dibuat Pada
+                Created At
                 <component :is="getSortIcon('created_at')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
@@ -365,11 +365,11 @@ async function handleDelete(user) {
               @click="setSortField('updated_at')"
             >
               <div class="flex items-center gap-2">
-                Update Terakhir
+                Last Updated
                 <component :is="getSortIcon('updated_at')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
-            <th v-if="auth.hasPermission('users.update') || auth.hasPermission('users.delete')" class="px-6 py-4 font-bold text-center w-28">Aksi</th>
+            <th v-if="auth.hasPermission('users.update') || auth.hasPermission('users.delete')" class="px-6 py-4 font-bold text-center w-28">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -384,10 +384,10 @@ async function handleDelete(user) {
               <StatusIndicator :active="u.is_active" />
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap text-left">
-              {{ u.created_at ? new Date(u.created_at + 'Z').toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ u.created_at ? new Date(u.created_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap text-left">
-              {{ u.updated_at ? new Date(u.updated_at + 'Z').toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ u.updated_at ? new Date(u.updated_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
             </td>
             <td v-if="auth.hasPermission('users.update') || auth.hasPermission('users.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
               <div class="flex items-center justify-center gap-1">
@@ -410,7 +410,7 @@ async function handleDelete(user) {
     <!-- Create/Edit Modal -->
     <Dialog 
       :open="showModal" 
-      :title="isEditing ? 'Edit Profile Pengguna' : 'Tambah Pengguna Baru'" 
+      :title="isEditing ? 'Edit User Profile' : 'Add New User'" 
       :max-width="isEditing ? 'max-w-4xl' : 'max-w-lg'"
       @close="showModal = false"
     >
@@ -419,27 +419,27 @@ async function handleDelete(user) {
         <form @submit.prevent="handleSave" class="space-y-6" :class="{'lg:col-span-7': isEditing}">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <FormField label="Username" htmlFor="username">
-              <Input id="username" v-model="form.username" placeholder="Contoh: johndoe" />
+              <Input id="username" v-model="form.username" placeholder="e.g. johndoe" />
             </FormField>
             
-            <FormField label="Nama Lengkap" htmlFor="fullname">
-              <Input id="fullname" v-model="form.full_name" placeholder="Contoh: John Doe" />
+            <FormField label="Full Name" htmlFor="fullname">
+              <Input id="fullname" v-model="form.full_name" placeholder="e.g. John Doe" />
             </FormField>
           </div>
           
-          <FormField label="Alamat Email" htmlFor="email">
+          <FormField label="Email Address" htmlFor="email">
             <Input id="email" v-model="form.email" type="email" placeholder="john@example.com" />
           </FormField>
 
           <FormField 
-            label="Kata Sandi" 
+            label="Password" 
             htmlFor="password"
-            :description="isEditing ? 'Biarkan kosong jika tidak ingin mengubah password' : ''"
+            :description="isEditing ? 'Leave blank if you do not want to change the password' : ''"
           >
             <Input id="password" v-model="form.password" type="password" placeholder="••••••••" />
           </FormField>
 
-          <FormField label="Role Akses" htmlFor="role">
+          <FormField label="Access Role" htmlFor="role">
             <select 
               id="role" 
               v-model="form.role_id"
@@ -452,8 +452,8 @@ async function handleDelete(user) {
           <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_active = !form.is_active">
             <input type="checkbox" v-model="form.is_active" id="is_active" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
             <div class="flex flex-col">
-              <Label for="is_active" class="cursor-pointer font-bold text-foreground">Status Akun Aktif</Label>
-              <span class="text-[10px] text-muted-foreground">Izinkan pengguna ini masuk ke dalam sistem</span>
+              <Label for="is_active" class="cursor-pointer font-bold text-foreground">Active Account Status</Label>
+              <span class="text-[10px] text-muted-foreground">Allow this user to log into the system</span>
             </div>
           </div>
         </form>
@@ -475,30 +475,30 @@ async function handleDelete(user) {
               <div class="space-y-2">
                 <div class="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
                   <div class="w-1.5 h-1.5 rounded-full bg-primary/50"></div>
-                  Login Terakhir
+                  Last Login
                 </div>
                 <p class="text-sm font-bold text-foreground bg-background/50 p-3 rounded-xl border border-border/30">
-                  {{ selectedUser.last_login_at ? new Date(selectedUser.last_login_at + 'Z').toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Belum pernah login' }}
+                  {{ selectedUser.last_login_at ? new Date(selectedUser.last_login_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never logged in' }}
                 </p>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1.5">
-                  <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Terdaftar</Label>
+                  <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Registered</Label>
                   <p class="text-xs font-bold text-foreground">
-                    {{ new Date(selectedUser.created_at + 'Z').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                    {{ new Date(selectedUser.created_at + 'Z').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) }}
                   </p>
                 </div>
                 <div class="space-y-1.5">
-                  <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Pembaruan</Label>
+                  <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Updated</Label>
                   <p class="text-xs font-bold text-foreground">
-                    {{ new Date(selectedUser.updated_at + 'Z').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                    {{ new Date(selectedUser.updated_at + 'Z').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) }}
                   </p>
                 </div>
               </div>
 
               <div class="pt-6 border-t border-border/50">
-                <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider mb-3 block">Keamanan & Identitas</Label>
+                <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider mb-3 block">Security & Identity</Label>
                 <div class="flex flex-wrap gap-2">
                   <Badge :variant="selectedUser.is_active ? 'success' : 'destructive'" class="px-2 py-0.5 text-[9px] font-black uppercase">
                     {{ selectedUser.is_active ? 'Verified' : 'Banned' }}
@@ -512,16 +512,16 @@ async function handleDelete(user) {
 
           <div class="p-6 bg-primary/5 border-t border-primary/10">
             <p class="text-[10px] text-primary/80 font-medium leading-relaxed italic text-center">
-              Perubahan status akun akan langsung berdampak pada hak akses sistem pengguna ini.
+              Account status changes will immediately impact this user's system access rights.
             </p>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <Button variant="outline" type="button" @click="showModal = false">Batal</Button>
+        <Button variant="outline" type="button" @click="showModal = false">Cancel</Button>
         <Button type="primary" @click="handleSave" :loading="saving">
-          {{ isEditing ? 'Simpan Perubahan' : 'Buat User Baru' }}
+          {{ isEditing ? 'Save Changes' : 'Create User' }}
         </Button>
       </template>
     </Dialog>

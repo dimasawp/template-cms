@@ -22,13 +22,40 @@ class PostService(BaseService):
         search: Optional[str] = None,
         is_published: Optional[bool] = None,
         category_id: Optional[int] = None,
+        category_level: Optional[int] = None,
+        order_by: Optional[str] = None,
+        order_dir: str = "asc",
     ):
         query = db.query(Post)
 
         if is_published is not None:
             query = query.filter(Post.is_published == is_published)
+            
         if category_id is not None:
-            query = query.filter(Post.category_id == category_id)
+            from app.modules.categories.services.category_service import CategoryService
+            descendant_ids = CategoryService.get_descendant_ids(db, category_id)
+            query = query.filter(Post.category_id.in_([category_id] + descendant_ids))
+            
+        if category_level is not None:
+            from app.modules.categories.models.category_model import Category
+            from app.modules.categories.services.category_service import CategoryService
+            all_cats = db.query(Category).all()
+            parent_map = {c.id: c.parent_id for c in all_cats}
+            
+            def get_level(cid):
+                lvl = 1
+                curr = parent_map.get(cid)
+                while curr:
+                    lvl += 1
+                    curr = parent_map.get(curr)
+                return lvl
+                
+            target_cat_ids = [cid for cid in parent_map if get_level(cid) == category_level]
+            if not target_cat_ids:
+                query = query.filter(Post.category_id == -1)
+            else:
+                query = query.filter(Post.category_id.in_(target_cat_ids))
+
         if search:
             query = query.filter(
                 Post.title.ilike(f"%{search}%")
@@ -36,7 +63,13 @@ class PostService(BaseService):
             )
 
         total = query.count()
-        posts = query.order_by(Post.id.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        if order_by and hasattr(Post, order_by):
+            col = getattr(Post, order_by)
+            query = query.order_by(col.desc() if order_dir == "desc" else col.asc())
+        else:
+            query = query.order_by(Post.id.desc())
+
+        posts = query.offset((page - 1) * per_page).limit(per_page).all()
         return posts, total
 
     @classmethod

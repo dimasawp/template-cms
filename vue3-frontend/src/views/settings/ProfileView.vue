@@ -63,7 +63,7 @@ async function fetchData() {
       profileForm.value.email = auth.user.email || ''
     }
   } catch (err) {
-    toast({ title: 'Error', description: 'Gagal memuat data profil', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to load profile data', variant: 'destructive' })
   } finally {
     isLoading.value = false
   }
@@ -73,10 +73,10 @@ async function handleUpdateProfile() {
   isSavingProfile.value = true
   try {
     await apiUpdateProfile(profileForm.value)
-    toast({ title: 'Berhasil', description: 'Profil berhasil diperbarui', variant: 'success' })
+    toast({ title: 'Success', description: 'Profile updated successfully', variant: 'success' })
     auth.fetchCurrentUser()
   } catch (err) {
-    toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal memperbarui profil', variant: 'destructive' })
+    toast({ title: 'Error', description: err.response?.data?.message || 'Failed to update profile', variant: 'destructive' })
   } finally {
     isSavingProfile.value = false
   }
@@ -88,12 +88,12 @@ const apiUpdateProfile = (data) => authService.updateMe(data)
 
 async function handleChangePassword() {
   if (passwordForm.value.new_password !== passwordForm.value.confirm_password) {
-    return toast({ title: 'Mismatch', description: 'Konfirmasi password tidak cocok', variant: 'destructive' })
+    return toast({ title: 'Mismatch', description: 'Password confirmation does not match', variant: 'destructive' })
   }
 
   const ok = await confirm.confirm({
-    title: 'Ganti Password Akun?',
-    message: 'Apakah Anda yakin ingin mengganti kunci akses akun Anda? Untuk keamanan, sistem menyarankan Anda login ulang setelah ini.',
+    title: 'Change Account Password?',
+    message: 'Are you sure you want to change your account password? For security, the system requires you to re-login after this.',
     variant: 'warning'
   })
 
@@ -105,7 +105,7 @@ async function handleChangePassword() {
       old_password: passwordForm.value.old_password,
       new_password: passwordForm.value.new_password
     })
-    toast({ title: 'Berhasil', description: 'Password berhasil diganti', variant: 'success' })
+    toast({ title: 'Success', description: 'Password changed successfully', variant: 'success' })
     passwordForm.value = { old_password: '', new_password: '', confirm_password: '' }
     
     // Auto logout for security after 2 seconds
@@ -114,7 +114,7 @@ async function handleChangePassword() {
       window.location.reload()
     }, 2000)
   } catch (err) {
-    toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal mengganti password', variant: 'destructive' })
+    toast({ title: 'Error', description: err.response?.data?.message || 'Failed to change password', variant: 'destructive' })
   } finally {
     isSavingPassword.value = false
   }
@@ -130,10 +130,10 @@ async function onFileSelected(event) {
   isUploadingAvatar.value = true
   try {
     await authService.uploadAvatar(formData)
-    toast({ title: 'Berhasil', description: 'Foto profil diperbarui', variant: 'success' })
+    toast({ title: 'Success', description: 'Profile picture updated', variant: 'success' })
     auth.fetchCurrentUser()
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal mengupload foto', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to upload picture', variant: 'destructive' })
   } finally {
     isUploadingAvatar.value = false
   }
@@ -144,7 +144,7 @@ onMounted(fetchData)
 
 <template>
   <div class="max-w-4xl mx-auto">
-    <PageHeader title="Akun Saya" description="Kelola informasi pribadi dan keamanan akun Anda" />
+    <PageHeader title="My Account" description="Manage your personal information and account security" />
 
     <div v-if="isLoading" class="space-y-6">
       <SkeletonLoader class="h-40 w-full" />
@@ -165,7 +165,7 @@ onMounted(fetchData)
             <label 
               v-if="enableAvatars"
               class="absolute bottom-0 right-0 p-1.5 bg-primary text-white rounded-full cursor-pointer shadow-lg hover:scale-105 transition-transform"
-              title="Ganti Foto"
+              title="Change Picture"
             >
               <input type="file" class="hidden" accept="image/*" @change="onFileSelected" />
               <Camera v-if="!isUploadingAvatar" class="h-4 w-4" />
@@ -184,9 +184,9 @@ onMounted(fetchData)
 
         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
           <p class="font-bold flex items-center gap-2 mb-1">
-            <Info class="h-4 w-4" /> Tips Keamanan
+            <Info class="h-4 w-4" /> Security Tips
           </p>
-          <p class="text-xs leading-relaxed opacity-90">Gunakan password yang kuat (minimal 8 karakter dengan kombinasi angka dan simbol) dan jangan gunakan password yang sama dengan aplikasi lain.</p>
+          <p class="text-xs leading-relaxed opacity-90">Use a strong password (at least 8 characters with a mix of numbers and symbols) and don't reuse passwords from other sites.</p>
         </div>
       </div>
 
@@ -196,7 +196,7 @@ onMounted(fetchData)
         <div class="bg-card rounded-lg border shadow-sm">
           <div class="px-6 py-4 border-b flex items-center gap-2">
             <User class="h-5 w-5 text-muted-foreground" />
-            <h3 class="font-bold">Informasi Profil</h3>
+            <h3 class="font-bold">Profile Information</h3>
           </div>
           <form @submit.prevent="handleUpdateProfile" class="p-6 space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -213,23 +213,23 @@ onMounted(fetchData)
                   <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                 </div>
                 <p v-if="!canChangeUsername" class="text-[10px] text-muted-foreground italic">
-                  Pengubahan username dinonaktifkan oleh kebijakan sistem.
+                  Username changes are disabled by system policy.
                 </p>
               </div>
               <div class="space-y-2">
-                <Label for="fullname">Nama Lengkap</Label>
-                <Input id="fullname" v-model="profileForm.full_name" placeholder="Nama Anda" />
+                <Label for="fullname">Full Name</Label>
+                <Input id="fullname" v-model="profileForm.full_name" placeholder="Your Name" />
               </div>
             </div>
             <div class="space-y-2">
-              <Label for="email">Alamat Email</Label>
+              <Label for="email">Email Address</Label>
               <div class="relative">
                 <Input id="email" type="email" v-model="profileForm.email" placeholder="email@example.com" class="pl-9" />
                 <Mail class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
             <div class="pt-2 flex justify-end">
-              <Button type="submit" :loading="isSavingProfile">Simpan Perubahan</Button>
+              <Button type="submit" :loading="isSavingProfile">Save Changes</Button>
             </div>
           </form>
         </div>
@@ -238,25 +238,25 @@ onMounted(fetchData)
         <div class="bg-card rounded-lg border shadow-sm">
           <div class="px-6 py-4 border-b flex items-center gap-2">
             <Key class="h-5 w-5 text-muted-foreground" />
-            <h3 class="font-bold">Keamanan Password</h3>
+            <h3 class="font-bold">Password Security</h3>
           </div>
           <form @submit.prevent="handleChangePassword" class="p-6 space-y-4">
             <div class="space-y-2">
-              <Label for="old_pass">Password Saat Ini</Label>
+              <Label for="old_pass">Current Password</Label>
               <Input id="old_pass" type="password" v-model="passwordForm.old_password" placeholder="••••••••" required />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <Label for="new_pass">Password Baru</Label>
-                <Input id="new_pass" type="password" v-model="passwordForm.new_password" placeholder="Minimal 6 karakter" required />
+                <Label for="new_pass">New Password</Label>
+                <Input id="new_pass" type="password" v-model="passwordForm.new_password" placeholder="At least 6 characters" required />
               </div>
               <div class="space-y-2">
-                <Label for="conf_pass">Konfirmasi Password Baru</Label>
-                <Input id="conf_pass" type="password" v-model="passwordForm.confirm_password" placeholder="Ulangi password baru" required />
+                <Label for="conf_pass">Confirm New Password</Label>
+                <Input id="conf_pass" type="password" v-model="passwordForm.confirm_password" placeholder="Repeat new password" required />
               </div>
             </div>
             <div class="pt-2 flex justify-end">
-              <Button type="submit" variant="secondary" :loading="isSavingPassword">Ganti Password</Button>
+              <Button type="submit" variant="secondary" :loading="isSavingPassword">Change Password</Button>
             </div>
           </form>
         </div>

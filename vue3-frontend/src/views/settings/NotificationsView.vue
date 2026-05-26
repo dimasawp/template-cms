@@ -21,10 +21,10 @@ const { items: notifications, isLoading, pagination, fetchItems, goToPage } = us
 async function markAllRead() {
   try {
     await notificationService.markAllRead()
-    toast({ title: 'Berhasil', description: 'Semua notifikasi telah ditandai dibaca', variant: 'success' })
+    toast({ title: 'Success', description: 'All notifications marked as read', variant: 'success' })
     fetchItems()
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal memperbarui status', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
   }
 }
 
@@ -58,7 +58,7 @@ onMounted(fetchItems)
 
 <template>
   <div>
-    <PageHeader title="Pemberitahuan System" description="Daftar notifikasi aktivitas dan peringatan sistem" />
+    <PageHeader title="System Notifications" description="List of activity notifications and system alerts" />
 
     <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-3">
       <div class="flex items-center gap-2">
@@ -69,7 +69,7 @@ onMounted(fetchItems)
       </div>
       <Button variant="ghost" size="sm" @click="markAllRead" class="text-primary hover:text-primary">
         <CheckCheck class="mr-2 h-4 w-4" />
-        Tandai Semua Dibaca
+        Mark All as Read
       </Button>
     </div>
 
@@ -96,21 +96,21 @@ onMounted(fetchItems)
               {{ n.title }}
             </h4>
             <span class="text-[10px] text-muted-foreground whitespace-nowrap">
-              {{ new Date(n.created_at + 'Z').toLocaleString('id-ID') }}
+              {{ new Date(n.created_at + 'Z').toLocaleString('en-US') }}
             </span>
           </div>
           <p class="text-sm mt-1 text-muted-foreground line-clamp-2">{{ n.message }}</p>
           
           <div class="mt-2 flex items-center gap-3">
             <router-link v-if="n.link" :to="n.link" class="text-xs font-medium text-primary hover:underline">
-              Lihat Detail
+              View Details
             </router-link>
             <button 
               v-if="!n.read_at" 
               @click="markRead(n.id)" 
               class="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
             >
-              Tandai dibaca
+              Mark as read
             </button>
           </div>
         </div>
@@ -120,12 +120,12 @@ onMounted(fetchItems)
 
       <div v-if="notifications.length === 0" class="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <Bell class="h-12 w-12 opacity-20 mb-4" />
-        <p>Belum ada notifikasi untuk Anda.</p>
+        <p>No notifications for you yet.</p>
       </div>
 
       <!-- Pagination -->
       <div v-if="notifications.length > 0" class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-4">
-        <p class="text-sm text-muted-foreground">Total: {{ pagination.total }} pemberitahuan</p>
+        <p class="text-sm text-muted-foreground">Total: {{ pagination.total }} notifications</p>
         <Pagination 
           :current-page="pagination.page" 
           :total-pages="pagination.totalPages" 

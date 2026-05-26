@@ -120,14 +120,14 @@ async function handleSave() {
 }
 
 async function handleDelete(role) {
-  const ok = await confirm.confirm({ title: 'Hapus Role', message: `Yakin ingin menghapus role "${role.name}"?`, variant: 'destructive' })
+  const ok = await confirm.confirm({ title: 'Delete Role', message: `Are you sure you want to delete the role "${role.name}"?`, variant: 'destructive' })
   if (!ok) return
   try {
     await roleService.delete(role.id)
     toast({ title: 'Role deleted', variant: 'success' })
     fetchItems()
   } catch (err) {
-    toast({ title: 'Gagal', description: err.response?.data?.message || 'Failed', variant: 'destructive' })
+    toast({ title: 'Error', description: err.response?.data?.message || 'Failed', variant: 'destructive' })
   }
 }
 
@@ -148,15 +148,15 @@ function handleFilterStatus(status) {
 
 <template>
   <div>
-    <PageHeader title="Role & Permission Management" description="Kelola role dan hak akses" />
+    <PageHeader title="Role & Permission Management" description="Manage roles and access rights" />
 
     <!-- Toolbar -->
     <DataTableToolbar
       v-model:search-model-value="filters.search"
-      search-placeholder="Cari role..."
+      search-placeholder="Search roles..."
       :is-loading="isLoading"
       :show-add-button="auth.hasPermission('roles.create')"
-      add-button-label="Tambah Role"
+      add-button-label="Add Role"
       @refresh="fetchItems"
       @add="openCreate"
     >
@@ -177,14 +177,14 @@ function handleFilterStatus(status) {
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Filter Role" @close="close" />
+             <PopoverHeader title="Filter Roles" @close="close" />
 
             <div class="space-y-4">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Status Role</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Role Status</Label>
                 <div class="grid grid-cols-3 gap-2">
                   <button 
-                    v-for="s in [{id:'', label:'SEMUA'}, {id:'active', label:'AKTIF'}, {id:'inactive', label:'NONAKTIF'}]" 
+                    v-for="s in [{id:'', label:'ALL'}, {id:'active', label:'ACTIVE'}, {id:'inactive', label:'INACTIVE'}]" 
                     :key="s.id"
                     @click="handleFilterStatus(s.id)"
                     class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
@@ -211,20 +211,20 @@ function handleFilterStatus(status) {
               class="h-10 px-3 flex items-center gap-2 border-input hover:bg-accent transition-colors shadow-sm text-foreground"
             >
               <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-              <span>Urutkan</span>
+              <span>Sort</span>
               <ChevronDown class="h-3 w-3 transition-transform" :class="{'rotate-180': isOpen}" />
             </Button>
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Urutkan Data" @close="close" />
+            <PopoverHeader title="Sort Data" @close="close" />
 
             <div class="space-y-4">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Berdasarkan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Sort By</Label>
                 <div class="space-y-1">
                   <button 
-                    v-for="f in [{id:'name', label:'Nama Role'}, {id:'created_at', label:'Waktu Dibuat'}, {id:'updated_at', label:'Update Terakhir'}]" 
+                    v-for="f in [{id:'name', label:'Role Name'}, {id:'created_at', label:'Created At'}, {id:'updated_at', label:'Last Updated'}]" 
                     :key="f.id"
                     @click="setSortField(f.id)"
                     class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
@@ -237,7 +237,7 @@ function handleFilterStatus(status) {
               </div>
 
               <div class="pt-2 border-t border-slate-100">
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Urutan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Direction</Label>
                 <div class="grid grid-cols-2 gap-2">
                   <button 
                     @click="setSortDirection('asc')"
@@ -270,11 +270,11 @@ function handleFilterStatus(status) {
     <EmptyState 
       v-if="!isLoading && roles.length === 0" 
       :icon="ShieldAlert" 
-      title="Belum ada Role" 
-      description="Tidak ditemukan data role dalam sistem. Silakan tambah role baru untuk mulai mengelola akses."
+      title="No Roles Found" 
+      description="No role data found in the system. Please add a new role to start managing access."
     >
       <template #actions>
-        <Button type="primary" @click="openCreate">Tambah Role Baru</Button>
+        <Button type="primary" @click="openCreate">Add New Role</Button>
       </template>
     </EmptyState>
 
@@ -299,7 +299,7 @@ function handleFilterStatus(status) {
               @click="setSortField('created_at')"
             >
               <div class="flex items-center gap-2">
-                Dibuat Pada
+                Created At
                 <component :is="getSortIcon('created_at')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
@@ -308,11 +308,11 @@ function handleFilterStatus(status) {
               @click="setSortField('updated_at')"
             >
               <div class="flex items-center gap-2">
-                Update Terakhir
+                Last Updated
                 <component :is="getSortIcon('updated_at')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
-            <th v-if="auth.hasPermission('roles.update') || auth.hasPermission('roles.delete')" class="px-6 py-4 font-bold text-center w-28">Aksi</th>
+            <th v-if="auth.hasPermission('roles.update') || auth.hasPermission('roles.delete')" class="px-6 py-4 font-bold text-center w-28">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -326,17 +326,17 @@ function handleFilterStatus(status) {
             <td class="px-6 py-3 text-xs text-muted-foreground">{{ r.description || '—' }}</td>
             <td class="px-6 py-3 text-left">
               <Badge variant="outline" class="font-bold border-primary/20 text-primary bg-primary/5">
-                {{ r.permission_count || 0 }} fitur
+                {{ r.permission_count || 0 }} features
               </Badge>
             </td>
             <td class="px-6 py-3 text-center">
               <StatusIndicator :active="r.is_active" />
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap">
-              {{ r.created_at ? new Date(r.created_at + 'Z').toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ r.created_at ? new Date(r.created_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap">
-              {{ r.updated_at ? new Date(r.updated_at + 'Z').toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ r.updated_at ? new Date(r.updated_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
             </td>
             <td v-if="auth.hasPermission('roles.update') || auth.hasPermission('roles.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
               <div class="flex items-center justify-center gap-1">
@@ -357,7 +357,7 @@ function handleFilterStatus(status) {
     <!-- Modal -->
     <Dialog 
       :open="showModal" 
-      :title="isEditing ? 'Konfigurasi Role & Hak Akses' : 'Tambah Role Baru'" 
+      :title="isEditing ? 'Role & Permission Configuration' : 'Add New Role'" 
       max-width="max-w-5xl"
       @close="showModal = false"
     >
@@ -366,22 +366,22 @@ function handleFilterStatus(status) {
         <div class="flex flex-col space-y-8">
           <div class="space-y-6">
             <div class="flex flex-col gap-1.5">
-              <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Detail Role</Label>
+              <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Role Details</Label>
               <div class="p-6 bg-muted/20 rounded-2xl border border-border/50 space-y-6">
-                <FormField label="Nama Role" htmlFor="roleName" required>
-                  <Input id="roleName" v-model="form.name" placeholder="Misal: Administrator" class="bg-background/50" />
+                <FormField label="Role Name" htmlFor="roleName" required>
+                  <Input id="roleName" v-model="form.name" placeholder="e.g. Administrator" class="bg-background/50" />
                 </FormField>
                 
-                <FormField label="Deskripsi" htmlFor="roleDesc">
-                  <Input id="roleDesc" v-model="form.description" placeholder="Deskripsi tanggung jawab role ini" class="bg-background/50" />
+                <FormField label="Description" htmlFor="roleDesc">
+                  <Input id="roleDesc" v-model="form.description" placeholder="Description of this role's responsibilities" class="bg-background/50" />
                 </FormField>
 
                 <div class="pt-4 border-t border-border/50">
                   <div class="flex items-center gap-3 p-3 bg-background/50 border border-border/30 rounded-xl cursor-pointer hover:bg-background transition-colors" @click="form.is_active = !form.is_active">
                     <input type="checkbox" v-model="form.is_active" id="role_active" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
                     <div class="flex flex-col">
-                      <Label for="role_active" class="cursor-pointer font-bold text-foreground text-[11px]">Role Aktif</Label>
-                      <span class="text-[10px] text-muted-foreground">Izinkan role ini digunakan oleh user</span>
+                      <Label for="role_active" class="cursor-pointer font-bold text-foreground text-[11px]">Active Role</Label>
+                      <span class="text-[10px] text-muted-foreground">Allow this role to be used by users</span>
                     </div>
                   </div>
                 </div>
@@ -394,9 +394,9 @@ function handleFilterStatus(status) {
                   <ShieldAlert class="w-5 h-5 text-primary" />
                 </div>
                 <div class="space-y-1">
-                  <h6 class="text-xs font-bold text-foreground">Prinsip Hak Akses Minimum</h6>
+                  <h6 class="text-xs font-bold text-foreground">Principle of Least Privilege</h6>
                   <p class="text-[11px] text-muted-foreground leading-relaxed">
-                    Berikan izin akses hanya pada fitur yang benar-benar dibutuhkan oleh pengguna. Hal ini sangat penting untuk menjaga integritas data sistem.
+                    Grant access only to the features genuinely required by the user. This is crucial for maintaining system data integrity.
                   </p>
                 </div>
               </div>
@@ -408,13 +408,13 @@ function handleFilterStatus(status) {
         <div class="flex flex-col h-full">
           <div class="flex flex-col gap-4 mb-4">
             <div class="flex items-center justify-between">
-              <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Hak Akses (Permissions)</Label>
+              <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Permissions</Label>
               <button 
                 type="button" 
                 @click="form.permission_ids = form.permission_ids.length === allPermissions.length ? [] : allPermissions.map(p => p.id)"
                 class="text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary/80 transition-colors"
               >
-                {{ form.permission_ids.length === allPermissions.length ? 'Batalkan Semua' : 'Pilih Semua' }}
+                {{ form.permission_ids.length === allPermissions.length ? 'Deselect All' : 'Select All' }}
               </button>
             </div>
             
@@ -422,14 +422,14 @@ function handleFilterStatus(status) {
               <div class="relative flex-1">
                 <Input 
                   v-model="permissionSearch" 
-                  placeholder="Cari fitur atau modul..." 
+                  placeholder="Search feature or module..." 
                   class="h-10 text-xs pr-10 bg-background/50"
                 />
                 <Search class="absolute right-3.5 top-3 h-4 w-4 text-muted-foreground" />
               </div>
               <div class="h-10 px-4 bg-muted/50 rounded-md border border-border/50 flex items-center shadow-sm">
                 <span class="text-[10px] font-black text-primary whitespace-nowrap uppercase tracking-tighter">
-                  {{ form.permission_ids.length }} Terpilih
+                  {{ form.permission_ids.length }} Selected
                 </span>
               </div>
             </div>
@@ -469,16 +469,16 @@ function handleFilterStatus(status) {
               <div class="p-4 bg-muted/50 rounded-full mb-4">
                 <Search class="w-8 h-8 text-muted-foreground/20" />
               </div>
-              <p class="text-xs text-muted-foreground font-medium">Tidak ada hasil untuk pencarian tersebut</p>
+              <p class="text-xs text-muted-foreground font-medium">No results found for that search</p>
             </div>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <Button variant="outline" type="button" @click="showModal = false">Batal</Button>
+        <Button variant="outline" type="button" @click="showModal = false">Cancel</Button>
         <Button type="primary" @click="handleSave" :loading="saving">
-          {{ isEditing ? 'Simpan Perubahan' : 'Buat Role Baru' }}
+          {{ isEditing ? 'Save Changes' : 'Create Role' }}
         </Button>
       </template>
     </Dialog>

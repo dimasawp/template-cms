@@ -51,11 +51,11 @@ const selectedLog = ref(null)
 
 const moduleCategories = [
   {
-    label: 'Akun & Akses',
+    label: 'Accounts & Access',
     modules: ['AUTH', 'USERS', 'ROLES']
   },
   {
-    label: 'Sistem & Pengaturan',
+    label: 'System & Settings',
     modules: ['SETTINGS', 'NOTIFICATIONS', 'SYSTEM']
   }
 ]
@@ -101,12 +101,12 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6 animate-in fade-in duration-700">
-    <PageHeader title="Audit Trail" description="Monitor seluruh aktifitas dan perubahan data sistem." />
+    <PageHeader title="Audit Trail" description="Monitor all system activities and data changes." />
 
     <!-- Toolbar -->
     <DataTableToolbar
       v-model:search-model-value="filters.search"
-      search-placeholder="Cari audit log (user, deskripsi)..."
+      search-placeholder="Search audit logs (user, description)..."
       :is-loading="isLoading"
       @refresh="fetchItems"
     >
@@ -127,18 +127,18 @@ onMounted(() => {
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Filter Audit" @close="close" />
+             <PopoverHeader title="Filter Audit" @close="close" />
 
             <div class="space-y-5">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Modul / Fitur</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Module / Feature</Label>
                 <div class="max-h-60 overflow-y-auto pr-1 custom-scrollbar space-y-1">
                   <button 
                     @click="handleFilterModule('')"
                     class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
                     :class="!filters.module ? 'bg-accent text-primary font-bold' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
                   >
-                    Semua Modul
+                    All Modules
                     <div v-if="!filters.module" class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(79,70,229,0.4)]"></div>
                   </button>
 
@@ -159,7 +159,7 @@ onMounted(() => {
               </div>
 
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Aksi</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Action</Label>
                 <div class="grid grid-cols-2 gap-2">
                   <button 
                     v-for="a in ['', 'CREATE', 'UPDATE', 'DELETE', 'RESET', 'LOGIN']" 
@@ -172,7 +172,7 @@ onMounted(() => {
                       : 'bg-background border-border text-muted-foreground hover:bg-muted'
                     ]"
                   >
-                    {{ a || 'SEMUA' }}
+                    {{ a || 'ALL' }}
                   </button>
                 </div>
               </div>
@@ -189,20 +189,20 @@ onMounted(() => {
               class="h-10 px-3 flex items-center gap-2 border-input hover:bg-accent transition-colors shadow-sm text-foreground"
             >
               <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-              <span>Urutkan</span>
+              <span>Sort</span>
               <ChevronDown class="h-3 w-3 transition-transform" :class="{'rotate-180': isOpen}" />
             </Button>
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Urutkan Data" @close="close" />
+            <PopoverHeader title="Sort Data" @close="close" />
 
             <div class="space-y-4">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Berdasarkan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Sort By</Label>
                 <div class="space-y-1">
                   <button 
-                    v-for="f in [{id:'action', label:'Aksi'}, {id:'module', label:'Modul'}, {id:'created_at', label:'Waktu'}]" 
+                    v-for="f in [{id:'action', label:'Action'}, {id:'module', label:'Module'}, {id:'created_at', label:'Time'}]" 
                     :key="f.id"
                     @click="setSortField(f.id)"
                     class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
@@ -215,7 +215,7 @@ onMounted(() => {
               </div>
 
               <div class="pt-2 border-t border-slate-100">
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Urutan</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Direction</Label>
                 <div class="grid grid-cols-2 gap-2">
                   <button 
                     @click="setSortDirection('asc')"
@@ -245,23 +245,23 @@ onMounted(() => {
     <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-300">
       <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-wider shadow-sm">
         <Filter class="h-3 w-3" />
-        Filter Aktif
+        Active Filters
       </div>
       
       <div v-if="filters.module" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
-        <span class="opacity-70">Modul:</span>
+        <span class="opacity-70">Module:</span>
         <span>{{ filters.module }}</span>
         <button @click="filters.module = undefined; fetchItems()" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
       </div>
       
       <div v-if="filters.action" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
-        <span class="opacity-70">Aksi:</span>
+        <span class="opacity-70">Action:</span>
         <span>{{ filters.action }}</span>
         <button @click="filters.action = undefined; fetchItems()" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
       </div>
 
       <button @click="Object.keys(filters).forEach(k => { if(k !== 'search') delete filters[k] }); fetchItems()" class="text-[11px] text-muted-foreground hover:text-destructive font-bold px-2 py-1.5 rounded-lg hover:bg-destructive/5 transition-all ml-1">
-        Hapus Semua
+        Clear All
       </button>
     </div>
 
@@ -273,12 +273,12 @@ onMounted(() => {
     <EmptyState 
       v-else-if="logs.length === 0" 
       :icon="Terminal" 
-      title="Audit Log Kosong" 
-      description="Tidak ada riwayat aktivitas yang ditemukan untuk kriteria filter ini."
+      title="Audit Log Empty" 
+      description="No activity history found for these filter criteria."
     >
       <template #actions>
         <Button variant="outline" size="sm" @click="Object.keys(filters).forEach(k => delete filters[k]); fetchItems()">
-          Reset Filter
+          Reset Filters
         </Button>
       </template>
     </EmptyState>
@@ -292,7 +292,7 @@ onMounted(() => {
               @click="setSortField('created_at')"
             >
               <div class="flex items-center gap-2">
-                Waktu
+                Time
                 <component :is="getSortIcon('created_at')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
@@ -302,7 +302,7 @@ onMounted(() => {
               @click="setSortField('action')"
             >
               <div class="flex items-center gap-2">
-                Aksi
+                Action
                 <component :is="getSortIcon('action')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
@@ -311,11 +311,11 @@ onMounted(() => {
               @click="setSortField('module')"
             >
               <div class="flex items-center gap-2">
-                Modul
+                Module
                 <component :is="getSortIcon('module')" class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
               </div>
             </th>
-            <th class="px-6 py-4 font-bold text-muted-foreground text-left">Deskripsi</th>
+            <th class="px-6 py-4 font-bold text-muted-foreground text-left">Description</th>
             <th class="px-6 py-4 font-bold text-center w-24">Detail</th>
           </tr>
         </thead>
@@ -368,7 +368,7 @@ onMounted(() => {
     <!-- Detail Modal -->
     <Dialog 
       :open="showDetailModal" 
-      :title="`Detail Log Aktifitas #${selectedLog?.id}`"
+      :title="`Activity Log Detail #${selectedLog?.id}`"
       max-width="max-w-3xl"
       @close="showDetailModal = false"
     >

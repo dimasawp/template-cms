@@ -109,7 +109,8 @@ class SettingService:
             {"key": "contact_email", "value": "admin@example.com", "group": "system", "desc": "Email dukungan sistem"},
             {"key": "enable_user_avatars", "value": "true", "group": "system", "desc": "Izinkan upload foto profil"},
             {"key": "allow_username_change", "value": "true", "group": "system", "desc": "Izinkan ganti username mandiri"},
-            {"key": "registration_enabled", "value": "true", "group": "system", "desc": "Izinkan pendaftaran mandiri"}
+            {"key": "registration_enabled", "value": "true", "group": "system", "desc": "Izinkan pendaftaran mandiri"},
+            {"key": "category_max_level", "value": "3", "group": "system", "desc": "Maksimal Level Kategori (Nesting)"}
         ]
 
         # 3. Filter defaults by group

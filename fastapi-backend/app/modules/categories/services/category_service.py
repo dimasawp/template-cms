@@ -7,9 +7,28 @@ from app.modules.categories.repositories.category_repository import CategoryRepo
 from app.modules.categories.models.category_model import Category
 from app.exceptions import NotFoundException, ConflictException, BadRequestException
 from app.modules.audit.services.audit_service import AuditService
+from app.modules.settings.services.setting_service import SettingService
 
 class CategoryService(BaseService):
     repository = CategoryRepository
+
+    @classmethod
+    def _get_category_level(cls, db: Session, cat_id: int) -> int:
+        level = 1
+        current = CategoryRepository.get_by_id(db, cat_id)
+        while current and current.parent_id:
+            level += 1
+            current = CategoryRepository.get_by_id(db, current.parent_id)
+        return level
+
+    @classmethod
+    def get_descendant_ids(cls, db: Session, cat_id: int) -> list[int]:
+        descendants = []
+        children = db.query(Category.id).filter(Category.parent_id == cat_id).all()
+        for child in children:
+            descendants.append(child.id)
+            descendants.extend(cls.get_descendant_ids(db, child.id))
+        return descendants
 
     @classmethod
     def get_all(
@@ -21,6 +40,8 @@ class CategoryService(BaseService):
         search: Optional[str] = None,
         is_active: Optional[bool] = None,
         parent_id: Optional[int] = None,
+        order_by: Optional[str] = None,
+        order_dir: str = "asc",
     ):
         query = db.query(Category)
 
@@ -35,7 +56,13 @@ class CategoryService(BaseService):
             )
 
         total = query.count()
-        categories = query.order_by(Category.id.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        if order_by and hasattr(Category, order_by):
+            col = getattr(Category, order_by)
+            query = query.order_by(col.desc() if order_dir == "desc" else col.asc())
+        else:
+            query = query.order_by(Category.id.desc())
+
+        categories = query.offset((page - 1) * per_page).limit(per_page).all()
         return categories, total
 
     @classmethod
@@ -47,6 +74,18 @@ class CategoryService(BaseService):
             parent = CategoryRepository.get_by_id(db, data.parent_id)
             if not parent:
                 raise NotFoundException("Parent category not found")
+
+            # Max level validation
+            max_level = 3
+            try:
+                setting = SettingService.get_by_key(db, "category_max_level")
+                max_level = int(setting.setting_value)
+            except Exception:
+                pass
+            
+            parent_level = cls._get_category_level(db, parent.id)
+            if parent_level >= max_level:
+                raise BadRequestException(f"Maximum nested level ({max_level}) reached")
 
         category = Category(**data.model_dump())
         db.add(category)
@@ -79,6 +118,18 @@ class CategoryService(BaseService):
             parent = CategoryRepository.get_by_id(db, update_data["parent_id"])
             if not parent:
                 raise NotFoundException("Parent category not found")
+            
+            # Max level validation
+            max_level = 3
+            try:
+                setting = SettingService.get_by_key(db, "category_max_level")
+                max_level = int(setting.setting_value)
+            except Exception:
+                pass
+            
+            parent_level = cls._get_category_level(db, parent.id)
+            if parent_level >= max_level:
+                raise BadRequestException(f"Maximum nested level ({max_level}) reached")
 
         has_changes = False
         for k, v in update_data.items():

@@ -23,12 +23,17 @@ async def get_all_posts(
     search: Optional[str] = Query(None),
     is_published: Optional[bool] = Query(None),
     category_id: Optional[int] = Query(None),
+    category_level: Optional[int] = Query(None),
+    order_by: Optional[str] = Query(None),
+    order_dir: str = Query("asc"),
     db: Session = Depends(get_db),
     _user: User = Depends(check_permission("posts.view")),
 ):
     posts, total = PostService.get_all(
         db, page=page, per_page=per_page, search=search,
-        is_published=is_published, category_id=category_id
+        is_published=is_published, category_id=category_id,
+        category_level=category_level,
+        order_by=order_by, order_dir=order_dir
     )
     items = [PostResponse.model_validate(p).model_dump() for p in posts]
     return paginated_response(items, total, page, per_page)

@@ -36,16 +36,16 @@ async function handleLogin() {
     <div class="w-full max-w-sm rounded-xl bg-card shadow-lg p-8">
       <div class="text-center mb-8">
         <h1 class="text-2xl font-bold text-primary">{{ settingsStore.siteName }}</h1>
-        <p class="mt-2 text-sm text-muted-foreground">Masuk ke dashboard</p>
+        <p class="mt-2 text-sm text-muted-foreground">Sign in to dashboard</p>
       </div>
 
       <!-- Maintenance Warning -->
       <div v-if="settingsStore.maintenanceMode" class="mb-6 p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-600 shadow-sm flex items-start gap-3 text-start">
         <ShieldAlert class="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
         <div class="text-xs">
-          <p class="font-bold mb-1">Mode Pemeliharaan Aktif</p>
+          <p class="font-bold mb-1">Maintenance Mode Active</p>
           <p class="opacity-90 leading-relaxed">
-            Sistem saat ini sedang dalam pemeliharaan. Akses dibatasi hanya untuk Administrator.
+            The system is currently undergoing maintenance. Access is restricted to Administrators only.
           </p>
         </div>
       </div>
@@ -63,14 +63,14 @@ async function handleLogin() {
         <p v-if="auth.error" class="text-sm text-destructive">{{ auth.error }}</p>
 
         <Button class="w-full" :loading="auth.isLoading" type="submit">
-          <LogIn v-if="!auth.isLoading" class="mr-2 h-4 w-4" /> Masuk
+          <LogIn v-if="!auth.isLoading" class="mr-2 h-4 w-4" /> Sign In
         </Button>
       </form>
 
       <p v-if="settingsStore.registrationEnabled" class="mt-6 text-center text-xs text-muted-foreground flex flex-col items-center">
         <span>
-          Belum punya akun? 
-          <router-link to="/register" class="text-primary font-bold hover:underline ml-1">Daftar di sini</router-link>
+          Don't have an account? 
+          <router-link to="/register" class="text-primary font-bold hover:underline ml-1">Register here</router-link>
         </span>
       </p>
     </div>

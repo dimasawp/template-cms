@@ -49,7 +49,7 @@ const iconColors = {
           :disabled="props.loading"
           class="rounded-xl font-bold h-11"
         >
-          {{ props.cancelLabel || 'Batal' }}
+          {{ props.cancelLabel || 'Cancel' }}
         </Button>
         <Button 
           :variant="props.variant === 'destructive' ? 'destructive' : 'default'" 
@@ -58,7 +58,7 @@ const iconColors = {
           class="rounded-xl font-bold h-11"
           :class="props.variant === 'destructive' ? 'shadow-lg shadow-rose-500/20' : 'shadow-lg shadow-primary/20'"
         >
-          {{ props.confirmLabel || 'Ya, Lanjutkan' }}
+          {{ props.confirmLabel || 'Yes, Continue' }}
         </Button>
       </div>
     </template>

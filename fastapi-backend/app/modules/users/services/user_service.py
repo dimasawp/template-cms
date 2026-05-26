@@ -25,6 +25,8 @@ class UserService(BaseService):
         search: Optional[str] = None,
         is_active: Optional[bool] = None,
         role_id: Optional[int] = None,
+        order_by: Optional[str] = None,
+        order_dir: str = "asc",
     ):
         query = db.query(User)
 
@@ -40,7 +42,13 @@ class UserService(BaseService):
             )
 
         total = query.count()
-        users = query.order_by(User.id.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        if order_by and hasattr(User, order_by):
+            col = getattr(User, order_by)
+            query = query.order_by(col.desc() if order_dir == "desc" else col.asc())
+        else:
+            query = query.order_by(User.id.desc())
+
+        users = query.offset((page - 1) * per_page).limit(per_page).all()
         return users, total
 
     @classmethod

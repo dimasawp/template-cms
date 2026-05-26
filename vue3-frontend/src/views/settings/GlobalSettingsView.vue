@@ -48,7 +48,8 @@ const form = ref({
   // System
   maintenance_mode: 'false',
   maintenance_scheduled_at: null,
-  registration_enabled: 'true'
+  registration_enabled: 'true',
+  category_max_level: '3'
 })
 
 const selectedSchedule = ref('0') // minutes
@@ -69,7 +70,7 @@ async function fetchSettings() {
     form.value = st
     
   } catch (err) {
-    toast({ title: 'Error', description: 'Gagal mengambil pengaturan', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to fetch settings', variant: 'destructive' })
   } finally {
     isLoading.value = false
   }
@@ -81,8 +82,8 @@ async function handleSave() {
   // Check if maintenance mode is turning ON
   if (form.value.maintenance_mode === 'true') {
     const ok = await confirm.confirm({
-      title: 'Aktifkan Mode Perawatan?',
-      message: 'Perhatian! Menghidupkan Mode Perawatan akan menutup akses publik ke seluruh website. Pastikan Anda sudah siap.',
+      title: 'Enable Maintenance Mode?',
+      message: 'Warning! Enabling Maintenance Mode will close public access to the entire website. Ensure you are ready.',
       variant: 'warning'
     })
     if (!ok) return
@@ -111,12 +112,13 @@ async function handleSave() {
       { setting_key: 'contact_email', setting_value: form.value.contact_email },
       { setting_key: 'enable_user_avatars', setting_value: form.value.enable_user_avatars === 'true' ? 'true' : 'false' },
       { setting_key: 'allow_username_change', setting_value: form.value.allow_username_change === 'true' ? 'true' : 'false' },
-      { setting_key: 'registration_enabled', setting_value: form.value.registration_enabled === 'true' ? 'true' : 'false' }
+      { setting_key: 'registration_enabled', setting_value: form.value.registration_enabled === 'true' ? 'true' : 'false' },
+      { setting_key: 'category_max_level', setting_value: form.value.category_max_level.toString() }
     ]
     await settingService.bulkUpdate(payload)
-    toast({ title: 'Berhasil', description: 'Pengaturan global berhasil disimpan', variant: 'success' })
+    toast({ title: 'Success', description: 'Global settings saved successfully', variant: 'success' })
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal menyimpan pengaturan', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to save settings', variant: 'destructive' })
   } finally {
     isSaving.value = false
   }
@@ -124,8 +126,8 @@ async function handleSave() {
 
 async function handleReset() {
   const ok = await confirm.confirm({
-    title: 'Reset Pengaturan?',
-    message: `Apakah Anda yakin ingin mengembalikan semua pengaturan ${activeTab.value === 'system' ? 'sistem' : 'umum'} ke nilai awal (default)? Tindakan ini tidak dapat dibatalkan.`,
+    title: 'Reset Settings?',
+    message: `Are you sure you want to reset all ${activeTab.value === 'system' ? 'system' : 'general'} settings to their default values? This action cannot be undone.`,
     variant: 'destructive'
   })
 
@@ -134,10 +136,10 @@ async function handleReset() {
   isResetting.value = true
   try {
     await settingService.reset(activeTab.value)
-    toast({ title: 'Berhasil', description: `Pengaturan ${activeTab.value === 'system' ? 'sistem' : 'umum'} telah dikembalikan ke default`, variant: 'success' })
+    toast({ title: 'Success', description: `${activeTab.value === 'system' ? 'System' : 'General'} settings have been reset to default`, variant: 'success' })
     await fetchSettings()
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal mereset pengaturan', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to reset settings', variant: 'destructive' })
   } finally {
     isResetting.value = false
   }
@@ -152,7 +154,7 @@ onMounted(() => {
   <div class="space-y-6 animate-in fade-in duration-700">
     <PageHeader 
       title="Global Settings" 
-      description="Pusat konfigurasi utama dan metadata sistem aplikasi" 
+      description="Main configuration and system metadata center" 
     />
 
     <!-- Tabs Navigation -->
@@ -166,7 +168,7 @@ onMounted(() => {
         ]"
       >
         <Globe class="w-4 h-4" />
-        Informasi Publik
+        Public Information
       </button>
       <button 
         v-if="isSuperAdmin"
@@ -178,7 +180,7 @@ onMounted(() => {
         ]"
       >
         <Settings2 class="w-4 h-4" />
-        Konfigurasi Sistem
+        System Configuration
       </button>
     </div>
 
@@ -198,8 +200,8 @@ onMounted(() => {
                 <Globe class="w-8 h-8 text-muted-foreground/40" />
               </div>
               <div class="max-w-xs mx-auto">
-                <h3 class="text-sm font-bold">Informasi Publik</h3>
-                <p class="text-xs text-muted-foreground mt-1">Belum ada pengaturan kategori umum yang tersedia saat ini. Semua konfigurasi utama berada di tab Sistem.</p>
+                <h3 class="text-sm font-bold">Public Information</h3>
+                <p class="text-xs text-muted-foreground mt-1">No general category settings are available yet. All main configurations are in the System tab.</p>
               </div>
             </div>
           </div>
@@ -214,8 +216,8 @@ onMounted(() => {
                     <Settings2 class="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 class="text-sm font-bold">Pusat Konfigurasi Sistem</h3>
-                    <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Identitas, Fitur & Akses Utama</p>
+                    <h3 class="text-sm font-bold">System Configuration Center</h3>
+                    <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Identity, Features & Access</p>
                   </div>
                 </div>
               </div>
@@ -226,15 +228,15 @@ onMounted(() => {
                 <div class="space-y-4">
                   <div class="flex items-center gap-2 text-xs font-bold text-primary/70 uppercase tracking-widest px-1">
                     <Layout class="w-3.5 h-3.5" />
-                    Branding & Kontak
+                    Branding & Contact
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1.5">
-                      <Label for="siteName" class="text-[11px] font-bold">Nama Aplikasi</Label>
-                      <Input id="siteName" v-model="form.site_name" :disabled="!canEdit" placeholder="Misal Web CMS" />
+                      <Label for="siteName" class="text-[11px] font-bold">Application Name</Label>
+                      <Input id="siteName" v-model="form.site_name" :disabled="!canEdit" placeholder="e.g. Web CMS" />
                     </div>
                     <div class="space-y-1.5">
-                      <Label for="contactEmail" class="text-[11px] font-bold">Email Dukungan</Label>
+                      <Label for="contactEmail" class="text-[11px] font-bold">Support Email</Label>
                       <Input id="contactEmail" type="email" v-model="form.contact_email" :disabled="!canEdit" placeholder="admin@example.com" />
                     </div>
                   </div>
@@ -244,7 +246,7 @@ onMounted(() => {
                 <div class="space-y-4 pt-6 border-t">
                   <div class="flex items-center gap-2 text-xs font-bold text-primary/70 uppercase tracking-widest px-1">
                     <KeyRound class="w-3.5 h-3.5" />
-                    Fitur & Hak Akses
+                    Features & Access
                   </div>
                   
                   <div class="space-y-3">
@@ -255,7 +257,7 @@ onMounted(() => {
                           Maintenance Mode
                           <span v-if="form.maintenance_mode === 'true'" class="flex h-2 w-2 rounded-full bg-destructive animate-pulse"></span>
                         </Label>
-                        <p class="text-[11px] text-muted-foreground mt-0.5">Tutup akses publik saat perbaikan sistem.</p>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Close public access during system maintenance.</p>
                       </div>
                       <button 
                         type="button"
@@ -274,16 +276,16 @@ onMounted(() => {
                     <!-- Maintenance Schedule -->
                     <div v-if="form.maintenance_mode === 'true'" class="animate-in slide-in-from-top-2 duration-300">
                       <div class="mx-3 p-4 bg-destructive/5 rounded-b-xl border-x border-b border-destructive/10 space-y-3">
-                        <Label class="text-[10px] font-black uppercase text-destructive/70 tracking-widest">Jadwal Lockdown</Label>
+                        <Label class="text-[10px] font-black uppercase text-destructive/70 tracking-widest">Lockdown Schedule</Label>
                         <select 
                           v-model="selectedSchedule"
                           :disabled="!canEdit"
                           class="w-full bg-card border border-destructive/20 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-destructive/30"
                         >
-                          <option value="0">Tutup Sekarang (Instan)</option>
-                          <option value="5">Beri Peringatan 5 Menit</option>
-                          <option value="10">Beri Peringatan 10 Menit</option>
-                          <option value="30">Beri Peringatan 30 Menit</option>
+                          <option value="0">Close Now (Instant)</option>
+                          <option value="5">Give 5 Minutes Warning</option>
+                          <option value="10">Give 10 Minutes Warning</option>
+                          <option value="30">Give 30 Minutes Warning</option>
                         </select>
                       </div>
                     </div>
@@ -291,8 +293,8 @@ onMounted(() => {
                     <!-- Toggle: Registration -->
                     <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors">
                       <div class="flex-1 pr-4">
-                        <Label class="text-sm font-bold">Registrasi Mandiri (Public Register)</Label>
-                        <p class="text-[11px] text-muted-foreground mt-0.5">Izinkan pengunjung umum mendaftar akun baru.</p>
+                        <Label class="text-sm font-bold">Public Registration</Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Allow public visitors to register for a new account.</p>
                       </div>
                       <button 
                         type="button"
@@ -311,8 +313,8 @@ onMounted(() => {
                     <!-- Toggle: Avatar -->
                     <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
                       <div class="flex-1 pr-4">
-                        <Label class="text-sm font-bold">Aktifkan Foto Profil</Label>
-                        <p class="text-[11px] text-muted-foreground mt-0.5">Admin dapat mengunggah dan menampilkan foto profil.</p>
+                        <Label class="text-sm font-bold">Enable Profile Avatars</Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Allow users to upload and display profile pictures.</p>
                       </div>
                       <button 
                         type="button"
@@ -331,8 +333,8 @@ onMounted(() => {
                     <!-- Toggle: Username Change -->
                     <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
                       <div class="flex-1 pr-4">
-                        <Label class="text-sm font-bold">Izinkan Ganti Username</Label>
-                        <p class="text-[11px] text-muted-foreground mt-0.5">Admin dapat mengubah username mandiri di halaman profil.</p>
+                        <Label class="text-sm font-bold">Allow Username Change</Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Allow users to change their own username on the profile page.</p>
                       </div>
                       <button 
                         type="button"
@@ -347,6 +349,24 @@ onMounted(() => {
                         ></span>
                       </button>
                     </div>
+
+                    <!-- Input: Category Max Level -->
+                    <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
+                      <div class="flex-1 pr-4">
+                        <Label class="text-sm font-bold">Category Max Level</Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Maximum depth of nested categories. Default: 3</p>
+                      </div>
+                      <div class="w-24 shrink-0">
+                        <Input 
+                          type="number" 
+                          v-model="form.category_max_level" 
+                          :disabled="!canEdit"
+                          min="1"
+                          max="10"
+                          class="text-center" 
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -357,7 +377,7 @@ onMounted(() => {
           <div v-if="canEdit && activeTab !== 'general'" class="flex justify-end items-center gap-3 pt-2">
             <Button type="submit" :loading="isSaving" class="px-8 font-bold shadow-lg shadow-primary/10">
               <Save class="w-4 h-4 mr-2" />
-              Simpan Konfigurasi Sistem
+              Save System Configuration
             </Button>
           </div>
         </form>
@@ -368,20 +388,20 @@ onMounted(() => {
         <div class="bg-primary/5 border border-primary/10 rounded-2xl p-6 space-y-4">
           <div class="flex items-center gap-2 text-primary">
             <Info class="w-5 h-5" />
-            <h4 class="text-sm font-black uppercase tracking-widest">Informasi</h4>
+            <h4 class="text-sm font-black uppercase tracking-widest">Information</h4>
           </div>
           <p class="text-xs text-muted-foreground leading-relaxed font-medium">
-            Pengaturan di halaman ini berdampak langsung pada operasional sistem secara keseluruhan. Pastikan Anda memahami setiap opsi sebelum melakukan perubahan.
+            Settings on this page directly impact overall system operations. Ensure you understand each option before making changes.
           </p>
         </div>
 
         <div v-if="isSuperAdmin" class="bg-destructive/5 border border-destructive/10 rounded-2xl p-6 space-y-5">
           <div class="flex items-center gap-2 text-destructive">
             <ShieldAlert class="w-5 h-5" />
-            <h4 class="text-sm font-black uppercase tracking-widest">Zona Berbahaya</h4>
+            <h4 class="text-sm font-black uppercase tracking-widest">Danger Zone</h4>
           </div>
           <p class="text-xs text-muted-foreground font-medium">
-            Kembalikan pengaturan di tab <span class="font-bold text-destructive underline">{{ activeTab === 'system' ? 'Sistem' : 'Umum' }}</span> ke nilai awal pabrik.
+            Restore settings in the <span class="font-bold text-destructive underline">{{ activeTab === 'system' ? 'System' : 'General' }}</span> tab to their factory defaults.
           </p>
           <Button 
             type="button" variant="outline" 
@@ -389,7 +409,7 @@ onMounted(() => {
             :loading="isResetting" @click="handleReset"
           >
             <RotateCcw class="w-4 h-4 mr-2" />
-            Reset {{ activeTab === 'system' ? 'Sistem' : 'Umum' }}
+            Reset {{ activeTab === 'system' ? 'System' : 'General' }}
           </Button>
         </div>
       </div>

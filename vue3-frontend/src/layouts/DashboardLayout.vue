@@ -27,7 +27,7 @@ const { status: maintenanceStatus } = useRealtime()
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
 
-const openGroups = ref(['Konten Web', 'Pengaturan'])
+const openGroups = ref(['Web Content', 'Settings'])
 
 const toggleGroup = (groupName) => {
   if (openGroups.value.includes(groupName)) {
@@ -45,14 +45,14 @@ const menuGroups = computed(() => [
     ]
   },
   {
-    name: 'Konten Web',
+    name: 'Web Content',
     items: [
-      { name: 'Postingan', icon: FileText, route: '/posts', permission: 'posts.view' },
-      { name: 'Kategori', icon: FolderTree, route: '/categories', permission: 'categories.view' }
+      { name: 'Posts', icon: FileText, route: '/posts', permission: 'posts.view' },
+      { name: 'Categories', icon: FolderTree, route: '/categories', permission: 'categories.view' }
     ]
   },
   {
-    name: 'Pengaturan',
+    name: 'Settings',
     items: [
       { name: 'User Management', icon: Users, route: '/users', permission: 'users.view' },
       { name: 'Role & Permission', icon: Shield, route: '/roles', permission: 'roles.view' },
@@ -71,13 +71,14 @@ const visibleGroups = computed(() => {
 })
 
 function isActive(path) {
-  return route.path === path
+  if (path === '/dashboard') return route.path === path
+  return route.path.startsWith(path)
 }
 
 async function handleLogout() {
   const ok = await confirm.confirm({
-    title: 'Konfirmasi Logout',
-    message: 'Apakah Anda yakin ingin keluar dari aplikasi?',
+    title: 'Confirm Logout',
+    message: 'Are you sure you want to log out of the application?',
     variant: 'destructive'
   })
   
@@ -214,7 +215,7 @@ onMounted(async () => {
           <router-link 
             to="/notifications" 
             class="relative p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
-            title="Pemberitahuan"
+            title="Notifications"
           >
             <Bell class="h-5 w-5" />
             <span 
@@ -248,7 +249,7 @@ onMounted(async () => {
               </div>
               <ChevronDown class="hidden lg:block h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </router-link>
-            <button @click="handleLogout" class="p-2 ml-1 text-destructive hover:bg-destructive/10 rounded-md" title="Keluar">
+            <button @click="handleLogout" class="p-2 ml-1 text-destructive hover:bg-destructive/10 rounded-md" title="Logout">
               <LogOut class="h-5 w-5" />
             </button>
           </div>

@@ -15,7 +15,7 @@ import {
   Clock
 } from 'lucide-vue-next'
 import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
 import Button from '@/components/ui/Button.vue'
 import Badge from '@/components/ui/Badge.vue'
 
@@ -32,11 +32,11 @@ const currentTime = ref(new Date())
 let timer = null
 
 const formattedDate = computed(() => {
-  return format(currentTime.value, 'EEEE, d MMMM yyyy', { locale: id })
+  return format(currentTime.value, 'EEEE, MMMM d, yyyy', { locale: enUS })
 })
 
 const formattedTime = computed(() => {
-  return format(currentTime.value, 'HH.mm.ss')
+  return format(currentTime.value, 'HH:mm:ss')
 })
 
 async function fetchStats() {
@@ -77,7 +77,7 @@ onUnmounted(() => {
           <div class="w-1.5 h-1.5 rounded-full bg-border"></div>
           <div class="flex items-center gap-1.5 font-mono font-bold">
             <Clock class="w-4 h-4" />
-            {{ formattedTime }} WIB
+            {{ formattedTime }}
           </div>
         </div>
       </div>
@@ -85,7 +85,7 @@ onUnmounted(() => {
       <div class="flex items-center gap-2">
         <Button class="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20">
           <Plus class="w-4 h-4 mr-2" />
-          Tambah User
+          Add User
         </Button>
         <Button variant="outline" size="icon" @click="fetchStats" :loading="isLoading" class="border-border shadow-sm">
           <RefreshCw class="w-4 h-4" />
@@ -104,10 +104,10 @@ onUnmounted(() => {
           </div>
           <div>
             <h2 class="text-xl font-bold text-foreground flex items-center gap-2">
-              Halo, {{ auth.user?.full_name || auth.username }} 👋
+              Hello, {{ auth.user?.full_name || auth.username }} 👋
             </h2>
             <p class="text-sm text-muted-foreground mt-0.5 font-medium">
-              Selamat datang di Panel Kendali Sistem — Akses Anda: 
+              Welcome to the System Control Panel — Your Access: 
               <span class="text-primary font-bold uppercase">{{ auth.userRole }}</span>
             </p>
           </div>
@@ -132,9 +132,9 @@ onUnmounted(() => {
       <div class="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
         <div class="flex items-start justify-between">
           <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Role Akses</p>
+            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Access Roles</p>
             <h3 class="text-3xl font-bold text-foreground mt-3">{{ stats.total_roles }}</h3>
-            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Daftar Peran & Akses</p>
+            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Roles & Permissions</p>
           </div>
           <div class="p-3 bg-blue-500/10 rounded-xl text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
             <Shield class="w-5 h-5" />
@@ -146,9 +146,9 @@ onUnmounted(() => {
       <div class="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
         <div class="flex items-start justify-between">
           <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Log Sesi</p>
+            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Session Logs</p>
             <h3 class="text-3xl font-bold text-foreground mt-3">{{ stats.active_users }}</h3>
-            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Akses Pengguna Aktif</p>
+            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Active Users Access</p>
           </div>
           <div class="p-3 bg-pink-500/10 rounded-xl text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-all duration-300">
             <Activity class="w-5 h-5" />
@@ -160,9 +160,9 @@ onUnmounted(() => {
       <div class="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
         <div class="flex items-start justify-between">
           <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total User</p>
+            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Users</p>
             <h3 class="text-3xl font-bold text-foreground mt-3">{{ stats.total_users }}</h3>
-            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Daftar Administrator</p>
+            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Administrator List</p>
           </div>
           <div class="p-3 bg-purple-500/10 rounded-xl text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
             <Users class="w-5 h-5" />
@@ -176,7 +176,7 @@ onUnmounted(() => {
           <div>
             <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Audit Log</p>
             <h3 class="text-3xl font-bold text-foreground mt-3">Check</h3>
-            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Monitoring Tindakan</p>
+            <p class="text-[10px] text-muted-foreground mt-2 font-medium">Action Monitoring</p>
           </div>
           <div class="p-3 bg-slate-500/10 rounded-xl text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-all duration-300">
             <Terminal class="w-5 h-5" />
@@ -192,8 +192,8 @@ onUnmounted(() => {
           <Activity class="w-8 h-8 opacity-20" />
         </div>
         <div>
-          <h4 class="font-bold text-foreground">Aktivitas Terbaru</h4>
-          <p class="text-sm text-muted-foreground max-w-xs mx-auto">Modul visualisasi grafik sedang dalam tahap pengembangan.</p>
+          <h4 class="font-bold text-foreground">Recent Activity</h4>
+          <p class="text-sm text-muted-foreground max-w-xs mx-auto">Graph visualization module is under development.</p>
         </div>
       </div>
 
@@ -201,15 +201,15 @@ onUnmounted(() => {
         <div>
           <div class="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest mb-4">
             <CheckCircle2 class="w-4 h-4" />
-            Tips Keamanan
+            Security Tips
           </div>
           <p class="text-sm font-medium text-foreground leading-relaxed">
-            Selalu periksa <span class="font-bold underline decoration-primary/30">Audit Log</span> secara berkala untuk memastikan tidak ada aktivitas mencurigakan dari akun administrator lain.
+            Always check the <span class="font-bold underline decoration-primary/30">Audit Log</span> regularly to ensure no suspicious activity from other administrator accounts.
           </p>
         </div>
         <router-link to="/settings/audit-logs">
           <Button variant="link" class="p-0 h-auto text-primary font-bold text-xs">
-            Lihat Semua Log →
+            View All Logs →
           </Button>
         </router-link>
       </div>

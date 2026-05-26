@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 const props = defineProps(['active', 'label', 'showDot'])
 
-const statusLabel = computed(() => props.label || (props.active ? 'Aktif' : 'Nonaktif'))
+const statusLabel = computed(() => props.label || (props.active ? 'Active' : 'Inactive'))
 
 const dotClasses = computed(() => {
   return [

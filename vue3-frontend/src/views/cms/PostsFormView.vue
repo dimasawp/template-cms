@@ -36,12 +36,56 @@ function generateSlug() {
   }
 }
 
+function formatCategoryTree(items) {
+  const itemMap = new Map()
+  items.forEach(item => {
+    itemMap.set(item.id, { ...item, children: [] })
+  })
+
+  const tree = []
+  itemMap.forEach(item => {
+    if (item.parent_id && itemMap.has(item.parent_id)) {
+      itemMap.get(item.parent_id).children.push(item)
+    } else {
+      tree.push(item)
+    }
+  })
+
+  const flat = []
+  function traverse(nodes, depth = 0, prefix = '') {
+    nodes.forEach((node, index) => {
+      const isLast = index === nodes.length - 1;
+      let branch = '';
+      if (depth > 0) {
+        branch = isLast ? '└─ ' : '├─ ';
+      }
+      
+      flat.push({
+        ...node,
+        level: depth,
+        isLast,
+        prefix,
+        branch,
+        displayName: prefix + branch + node.name
+      })
+      
+      // Use standard spaces for HTML select element, 
+      // where monospace is not guaranteed but spaces still work okayish.
+      // Alternatively we can use non-breaking spaces for indenting.
+      const nextPrefix = prefix + (depth > 0 ? (isLast ? '\u00A0\u00A0\u00A0\u00A0' : '│\u00A0\u00A0\u00A0') : '');
+      traverse(node.children, depth + 1, nextPrefix)
+    })
+  }
+  traverse(tree)
+  return flat
+}
+
 async function loadCategories() {
   try {
-    const { data } = await categoryService.getAll({ per_page: 100 })
-    categories.value = data.data.items
+    const { data } = await categoryService.getAll({ per_page: 1000 })
+    categories.value = formatCategoryTree(data.data.items)
   } catch (e) {
-    console.error("Gagal meload kategori", e)
+    console.error("Failed to load categories", e)
   }
 }
 
@@ -60,7 +104,7 @@ async function loadPost() {
       is_published: post.is_published
     }
   } catch (e) {
-    toast({ title: 'Error', message: 'Gagal memuat postingan', variant: 'destructive' })
+    toast({ title: 'Error', message: 'Failed to load post', variant: 'destructive' })
     router.push('/posts')
   }
 }
@@ -82,7 +126,7 @@ onMounted(async () => {
       if (parsedDraft.title || parsedDraft.content) {
         // Delay to allow UI to render first
         setTimeout(() => {
-          if (confirm('Terdapat draft tulisan yang belum tersimpan. Apakah Anda ingin memulihkannya?')) {
+          if (confirm('An unsaved draft was found. Would you like to restore it?')) {
             form.value = parsedDraft
           } else {
             localStorage.removeItem(draftKey)
@@ -111,10 +155,10 @@ async function handleSave() {
 
     if (isEditing.value) {
       await postService.update(route.params.id, payload)
-      toast({ title: 'Sukses', message: 'Postingan berhasil diperbarui' })
+      toast({ title: 'Success', message: 'Post updated successfully' })
     } else {
       await postService.create(payload)
-      toast({ title: 'Sukses', message: 'Postingan berhasil dibuat' })
+      toast({ title: 'Success', message: 'Post created successfully' })
     }
     
     // Clear draft on success
@@ -122,7 +166,7 @@ async function handleSave() {
     
     router.push('/posts')
   } catch (e) {
-    toast({ title: 'Error', message: e.response?.data?.message || 'Gagal menyimpan postingan', variant: 'destructive' })
+    toast({ title: 'Error', message: e.response?.data?.message || 'Failed to save post', variant: 'destructive' })
   } finally {
     saving.value = false
   }
@@ -133,22 +177,22 @@ async function handleSave() {
 <template>
   <div class="max-w-6xl mx-auto pb-10">
     <div class="flex items-center justify-between mb-6">
-      <PageHeader :title="isEditing ? 'Edit Postingan' : 'Tulis Postingan Baru'" description="Gunakan editor di bawah untuk menulis konten artikel." />
+      <PageHeader :title="isEditing ? 'Edit Post' : 'Write New Post'" description="Use the editor below to compose your article content." />
       <div class="flex gap-3">
-        <Button variant="outline" @click="router.push('/posts')">Batal</Button>
-        <Button @click="handleSave" :loading="saving">{{ isEditing ? 'Simpan Perubahan' : 'Terbitkan Postingan' }}</Button>
+        <Button variant="outline" @click="router.push('/posts')">Cancel</Button>
+        <Button @click="handleSave" :loading="saving">{{ isEditing ? 'Save Changes' : 'Publish Post' }}</Button>
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-6">
         <div class="bg-card border border-border p-6 rounded-xl shadow-sm space-y-5">
-          <FormField label="Judul Artikel" htmlFor="title">
-            <Input id="title" v-model="form.title" @input="generateSlug" placeholder="Masukkan judul..." class="text-lg font-bold h-12" />
+          <FormField label="Article Title" htmlFor="title">
+            <Input id="title" v-model="form.title" @input="generateSlug" placeholder="Enter title..." class="text-lg font-bold h-12" />
           </FormField>
           
           <div class="pt-2">
-            <Label class="text-sm font-semibold mb-2 block">Konten Artikel</Label>
+            <Label class="text-sm font-semibold mb-2 block">Article Content</Label>
             <!-- JODIT VUE3 COMPONENT -->
             <jodit-editor v-model="form.content" :config="editorConfig" />
           </div>
@@ -157,20 +201,27 @@ async function handleSave() {
 
       <div class="lg:col-span-1 space-y-6">
         <div class="bg-card border border-border p-5 rounded-xl shadow-sm space-y-5">
-          <h3 class="font-bold border-b border-border pb-3">Pengaturan</h3>
+          <h3 class="font-bold border-b border-border pb-3">Settings</h3>
           
           <FormField label="URL Slug" htmlFor="slug">
-            <Input id="slug" v-model="form.slug" placeholder="contoh-judul" />
+            <Input id="slug" v-model="form.slug" placeholder="example-title" />
           </FormField>
 
-          <FormField label="Kategori" htmlFor="cat">
+          <FormField label="Category" htmlFor="cat">
             <select 
               id="cat" 
               v-model="form.category_id"
-              class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary transition-all"
             >
-              <option value="">Tanpa Kategori</option>
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+              <option value="">No Category</option>
+              <option 
+                v-for="c in categories" 
+                :key="c.id" 
+                :value="c.id"
+                :disabled="!c.is_active"
+              >
+                {{ c.displayName }} {{ !c.is_active ? '(Inactive)' : '' }}
+              </option>
             </select>
           </FormField>
 
@@ -178,8 +229,8 @@ async function handleSave() {
             <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_published = !form.is_published">
               <input type="checkbox" v-model="form.is_published" id="is_published" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
               <div class="flex flex-col">
-                <Label for="is_published" class="cursor-pointer font-bold text-foreground">Langsung Publish</Label>
-                <span class="text-[10px] text-muted-foreground">Bisa dilihat oleh publik</span>
+                <Label for="is_published" class="cursor-pointer font-bold text-foreground">Publish Immediately</Label>
+                <span class="text-[10px] text-muted-foreground">Visible to the public</span>
               </div>
             </div>
           </div>

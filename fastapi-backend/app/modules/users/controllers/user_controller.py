@@ -27,6 +27,8 @@ async def get_all_users(
     search: Optional[str] = Query(None, description="Search by username, email, or name"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     role_id: Optional[int] = Query(None, description="Filter by role"),
+    order_by: Optional[str] = Query(None),
+    order_dir: str = Query("asc"),
     db: Session = Depends(get_db),
     _user: User = Depends(check_permission("users.view")),
 ):
@@ -34,6 +36,7 @@ async def get_all_users(
     users, total = UserService.get_all_users(
         db, page=page, per_page=per_page, search=search,
         is_active=is_active, role_id=role_id,
+        order_by=order_by, order_dir=order_dir,
     )
     items = [UserService.to_list_item(u, db) for u in users]
     return paginated_response(items, total, page, per_page)

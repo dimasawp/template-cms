@@ -35,7 +35,7 @@ async function fetchSessions() {
     const { data: res } = await authService.getSessions()
     sessions.value = res.data
   } catch (err) {
-    toast({ title: 'Error', description: 'Gagal memuat sesi aktif', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to load active sessions', variant: 'destructive' })
   } finally {
     isLoading.value = false
   }
@@ -79,7 +79,7 @@ function toggleSelect(id) {
 async function handleRevoke(session) {
   const ok = await confirm.confirm({
     title: 'Revoke Session?',
-    message: `Apakah Anda yakin ingin menghentikan sesi untuk user "${session.username}"?`,
+    message: `Are you sure you want to end the session for user "${session.username}"?`,
     variant: 'destructive',
   })
 
@@ -87,10 +87,10 @@ async function handleRevoke(session) {
 
   try {
     await authService.revokeSession(session.id)
-    toast({ title: 'Berhasil', description: 'Sesi telah dihentikan', variant: 'success' })
+    toast({ title: 'Success', description: 'Session has been ended', variant: 'success' })
     fetchSessions()
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal menghentikan sesi', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to end session', variant: 'destructive' })
   }
 }
 
@@ -100,7 +100,7 @@ async function handleBulkRevoke() {
 
   const ok = await confirm.confirm({
     title: 'Mass Revoke?',
-    message: `Apakah Anda yakin ingin menghentikan ${count} sesi terpilih sekaligus?`,
+    message: `Are you sure you want to end the ${count} selected sessions at once?`,
     variant: 'destructive',
   })
 
@@ -108,11 +108,11 @@ async function handleBulkRevoke() {
 
   try {
     await authService.bulkRevokeSessions(selectedIds.value)
-    toast({ title: 'Berhasil', description: `${count} sesi telah dihentikan`, variant: 'success' })
+    toast({ title: 'Success', description: `${count} sessions have been ended`, variant: 'success' })
     selectedIds.value = []
     fetchSessions()
   } catch (err) {
-    toast({ title: 'Gagal', description: 'Gagal menghentikan sesi masal', variant: 'destructive' })
+    toast({ title: 'Error', description: 'Failed to mass revoke sessions', variant: 'destructive' })
   }
 }
 
@@ -138,12 +138,12 @@ onMounted(fetchSessions)
 
 <template>
   <div class="space-y-6">
-    <PageHeader title="Active Sessions" description="Pantau dan kelola admin yang sedang login ke sistem" />
+    <PageHeader title="Active Sessions" description="Monitor and manage admins currently logged into the system" />
 
     <!-- Toolbar (Standardized) -->
     <DataTableToolbar
       v-model:search-model-value="searchQuery"
-      search-placeholder="Cari nama, username, atau IP..."
+      search-placeholder="Search name, username, or IP..."
       :is-loading="isLoading"
       @refresh="fetchSessions"
     >
@@ -155,7 +155,7 @@ onMounted(fetchSessions)
           </Button>
           <Button v-if="auth.hasPermission('sessions.delete')" variant="outline" class="h-10 px-3 shadow-sm" @click="toggleSelectAll">
             <component :is="isAllSelected ? CheckSquare : Square" class="mr-2 h-4 w-4" />
-            {{ isAllSelected ? 'Batal Pilih' : 'Pilih Semua' }}
+            {{ isAllSelected ? 'Deselect All' : 'Select All' }}
           </Button>
         </div>
       </template>
@@ -165,9 +165,9 @@ onMounted(fetchSessions)
     <div class="flex items-start gap-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-500 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
       <ShieldAlert class="h-5 w-5 shrink-0" />
       <div class="text-xs">
-        <p class="font-bold mb-1">Keamanan Sesi Real-time</p>
+        <p class="font-bold mb-1">Real-time Session Security</p>
         <p class="opacity-90 leading-relaxed">
-          Sistem mendukung <strong>Instant Kick</strong>. Begitu sesi dihentikan, user tersebut tidak akan bisa melakukan aksi apa pun dan akan langsung diarahkan ke login.
+          The system supports <strong>Instant Kick</strong>. Once a session is revoked, the user won't be able to perform any action and will be redirected to login.
         </p>
       </div>
     </div>
@@ -182,8 +182,8 @@ onMounted(fetchSessions)
       <div class="bg-muted p-4 rounded-full mb-4">
         <Monitor class="h-10 w-10 opacity-40" />
       </div>
-      <p class="font-medium text-foreground">Tidak ada sesi aktif ditemukan</p>
-      <p class="text-xs mt-1">Coba gunakan kata kunci pencarian yang berbeda.</p>
+      <p class="font-medium text-foreground">No active sessions found</p>
+      <p class="text-xs mt-1">Try using a different search keyword.</p>
     </div>
 
     <!-- Session Cards -->
@@ -237,7 +237,7 @@ onMounted(fetchSessions)
           </div>
           <div class="flex justify-between items-center text-[11px]">
             <span class="text-muted-foreground font-medium uppercase tracking-wider">LOGIN TIME</span>
-            <span class="text-foreground font-medium">{{ new Date(s.created_at + 'Z').toLocaleString('id-ID') }}</span>
+            <span class="text-foreground font-medium">{{ new Date(s.created_at + 'Z').toLocaleString('en-US') }}</span>
           </div>
         </div>
       </div>

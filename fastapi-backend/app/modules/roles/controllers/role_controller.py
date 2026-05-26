@@ -23,11 +23,21 @@ async def get_all_roles(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None, description="Search by role name"),
+    is_active: Optional[bool] = Query(None, description="Filter by status"),
+    order_by: Optional[str] = Query(None),
+    order_dir: str = Query("asc"),
     db: Session = Depends(get_db),
     _u: User = Depends(check_permission("roles.view")),
 ):
     """List roles with pagination."""
-    roles, total = RoleRepository.get_all(db, page=page, per_page=per_page, search=search)
+    filters = {}
+    if is_active is not None:
+        filters["is_active"] = is_active
+        
+    roles, total = RoleRepository.get_all(
+        db, page=page, per_page=per_page, search=search,
+        filters=filters, order_by=order_by, order_dir=order_dir
+    )
     items = [RoleService.to_response(r, db) for r in roles]
     return paginated_response(items, total, page, per_page)
 

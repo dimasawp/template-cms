@@ -6,6 +6,13 @@ import { ChevronRight, Home } from 'lucide-vue-next'
 const route = useRoute()
 
 const breadcrumbs = computed(() => {
+  if (route.meta.breadcrumbs) {
+    return route.meta.breadcrumbs.map((bc, index, arr) => ({
+      ...bc,
+      active: index === arr.length - 1
+    }))
+  }
+
   // Get all matched routes that have a name or specific title
   const matched = route.matched.filter(m => {
     // Skip the root layout if it doesn't have a specific title/name we want to show

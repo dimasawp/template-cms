@@ -18,7 +18,7 @@ defineEmits(['update:searchModelValue', 'add', 'refresh'])
           <Input 
             :model-value="searchModelValue"
             @update:model-value="v => $emit('update:searchModelValue', v)"
-            :placeholder="searchPlaceholder || 'Cari data...'" 
+            :placeholder="searchPlaceholder || 'Search data...'" 
             class="pl-10 h-10 border-input bg-background focus:border-primary focus:ring-primary/20 shadow-sm"
           />
         </div>
@@ -46,7 +46,7 @@ defineEmits(['update:searchModelValue', 'add', 'refresh'])
             @click="$emit('add')"
           >
             <Plus class="mr-2 h-4 w-4" />
-            {{ addButtonLabel || 'Tambah Data' }}
+            {{ addButtonLabel || 'Add Data' }}
           </Button>
         </slot>
       </div>

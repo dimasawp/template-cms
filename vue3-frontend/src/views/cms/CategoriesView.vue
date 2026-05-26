@@ -30,7 +30,9 @@ import {
   ChevronDown,
   X,
   Search,
-  FolderTree
+  FolderTree,
+  List,
+  GitBranchPlus
 } from 'lucide-vue-next'
 
 const { toast } = useToast()
@@ -65,6 +67,10 @@ const saving = ref(false)
 const form = ref({ name: '', slug: '', description: '', parent_id: '', is_active: true })
 const editId = ref(null)
 
+const allCategories = ref([])
+const isFetchingAll = ref(false)
+const showTree = ref(true)
+
 const hasActiveFilters = computed(() => {
   return filters.is_active !== undefined
 })
@@ -75,11 +81,77 @@ function generateSlug() {
   }
 }
 
+async function fetchAllCategories() {
+  isFetchingAll.value = true
+  try {
+    const { data: res } = await categoryService.getAll({ per_page: 1000 })
+    allCategories.value = formatCategoryTree(res.data.items)
+  } catch (err) {
+    console.error("Failed to fetch all categories", err)
+  } finally {
+    isFetchingAll.value = false
+  }
+}
+
+function formatCategoryTree(items) {
+  const itemMap = new Map()
+  items.forEach(item => {
+    itemMap.set(item.id, { ...item, children: [] })
+  })
+
+  const tree = []
+  itemMap.forEach(item => {
+    if (item.parent_id && itemMap.has(item.parent_id)) {
+      itemMap.get(item.parent_id).children.push(item)
+    } else {
+      tree.push(item)
+    }
+  })
+
+  const flat = []
+  function traverse(nodes, depth = 0, prefix = '') {
+    nodes.forEach((node, index) => {
+      const isLast = index === nodes.length - 1;
+      let branch = '';
+      if (depth > 0) {
+        branch = isLast ? '└─ ' : '├─ ';
+      }
+      
+      flat.push({
+        ...node,
+        level: depth,
+        isLast,
+        prefix,
+        branch,
+        displayName: prefix + branch + node.name
+      })
+      
+      // Use IDEOGRAPHIC SPACE (\u3000) or em space (\u2003) for better alignment, 
+      // but standard spaces in monospace font work best.
+      const nextPrefix = prefix + (depth > 0 ? (isLast ? '\u00A0\u00A0\u00A0\u00A0' : '│\u00A0\u00A0\u00A0') : '');
+      traverse(node.children, depth + 1, nextPrefix)
+    })
+  }
+  traverse(tree)
+  return flat
+}
+
+function isInvalidParent(targetCatId, currentCatId) {
+  if (targetCatId === currentCatId) return true
+  let currentTarget = allCategories.value.find(c => c.id === targetCatId)
+  while (currentTarget && currentTarget.parent_id) {
+    if (currentTarget.parent_id === currentCatId) return true
+    currentTarget = allCategories.value.find(c => c.id === currentTarget.parent_id)
+  }
+  return false
+}
+
 function openCreate() {
   isEditing.value = false
   editId.value = null
   form.value = { name: '', slug: '', description: '', parent_id: '', is_active: true }
   showModal.value = true
+  fetchAllCategories()
 }
 
 function openEdit(cat) {
@@ -93,6 +165,7 @@ function openEdit(cat) {
     is_active: cat.is_active 
   }
   showModal.value = true
+  fetchAllCategories()
 }
 
 async function handleSave() {
@@ -103,50 +176,76 @@ async function handleSave() {
     
     if (isEditing.value && editId.value) {
       await categoryService.update(editId.value, payload)
-      toast({ title: 'Kategori diperbarui', variant: 'success' })
+      toast({ title: 'Category updated', variant: 'success' })
     } else {
       await categoryService.create(payload)
-      toast({ title: 'Kategori dibuat', variant: 'success' })
+      toast({ title: 'Category created', variant: 'success' })
     }
     showModal.value = false
     fetchItems()
+    fetchAllCategories()
   } catch (err) {
-    toast({ title: 'Error', description: err.response?.data?.message || 'Gagal menyimpan', variant: 'destructive' })
+    toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' })
   } finally {
     saving.value = false
   }
 }
 
 async function handleDelete(cat) {
-  const ok = await confirm.confirm({ title: 'Hapus Kategori', message: `Yakin ingin menghapus "${cat.name}"?`, variant: 'destructive' })
+  const ok = await confirm.confirm({ title: 'Delete Category', message: `Are you sure you want to delete "${cat.name}"?`, variant: 'destructive' })
   if (!ok) return
   try {
     await categoryService.delete(cat.id)
-    toast({ title: 'Kategori dihapus', variant: 'success' })
+    toast({ title: 'Category deleted', variant: 'success' })
     fetchItems()
+    fetchAllCategories()
   } catch {
-    toast({ title: 'Gagal menghapus', variant: 'destructive' })
+    toast({ title: 'Failed to delete', variant: 'destructive' })
   }
 }
+
+onMounted(() => {
+  fetchAllCategories()
+})
 
 </script>
 
 <template>
   <div>
-    <PageHeader title="Manajemen Kategori" description="Kelola kategori untuk konten dan postingan" />
+    <PageHeader title="Category Management" description="Manage categories for content and posts" />
 
     <DataTableToolbar
       v-model:search-model-value="filters.search"
-      search-placeholder="Cari kategori (nama, slug)..."
+      search-placeholder="Search categories (name, slug)..."
       :is-loading="isLoading"
       :show-add-button="auth.hasPermission('categories.create')"
-      add-button-label="Tambah Kategori"
-      @refresh="fetchItems"
+      add-button-label="Add Category"
+      @refresh="() => { fetchItems(); fetchAllCategories() }"
       @add="openCreate"
     >
       <template #actions-start>
+        <!-- Tree / Flat Toggle (Segmented Control) -->
+        <div class="flex items-center p-1 bg-muted/50 border border-border rounded-lg h-10">
+          <button 
+            @click="showTree = true"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all"
+            :class="showTree ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+          >
+            <GitBranchPlus class="h-3.5 w-3.5" />
+            Tree
+          </button>
+          <button 
+            @click="showTree = false"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all"
+            :class="!showTree ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+          >
+            <List class="h-3.5 w-3.5" />
+            List
+          </button>
+        </div>
+
         <!-- Filter Popover -->
-        <Popover align="right" width="w-72">
+        <Popover align="right" width="w-72" v-if="!showTree">
           <template #trigger="{ isOpen }">
             <Button 
               variant="outline" 
@@ -161,13 +260,13 @@ async function handleDelete(cat) {
           </template>
 
           <template #default="{ close }">
-            <PopoverHeader title="Filter Kategori" @close="close" />
+            <PopoverHeader title="Filter Categories" @close="close" />
             <div class="space-y-5">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Status Aktif</Label>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Active Status</Label>
                 <div class="grid grid-cols-3 gap-2">
                   <button 
-                    v-for="s in [{id:'', label:'SEMUA'}, {id:'active', label:'AKTIF'}, {id:'inactive', label:'NONAKTIF'}]" 
+                    v-for="s in [{id:'', label:'ALL'}, {id:'active', label:'ACTIVE'}, {id:'inactive', label:'INACTIVE'}]" 
                     :key="s.id"
                     @click="handleFilterStatus(s.id)"
                     class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
@@ -184,6 +283,65 @@ async function handleDelete(cat) {
             </div>
           </template>
         </Popover>
+
+        <!-- Sort Popover -->
+        <Popover align="right" width="w-56" v-if="!showTree">
+          <template #trigger="{ isOpen }">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              class="h-10 px-3 flex items-center gap-2 border-input hover:bg-accent transition-colors shadow-sm text-foreground"
+            >
+              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+              <span>Sort</span>
+              <ChevronDown class="h-3 w-3 transition-transform" :class="{'rotate-180': isOpen}" />
+            </Button>
+          </template>
+
+          <template #default="{ close }">
+            <PopoverHeader title="Sort Data" @close="close" />
+
+            <div class="space-y-4">
+              <div>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Sort By</Label>
+                <div class="space-y-1">
+                  <button 
+                    v-for="f in [{id:'name', label:'Name'}, {id:'slug', label:'Slug'}, {id:'created_at', label:'Created At'}]" 
+                    :key="f.id"
+                    @click="setSortField(f.id)"
+                    class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
+                    :class="sort.field === f.id ? 'bg-accent text-primary shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+                  >
+                    {{ f.label }}
+                    <div v-if="sort.field === f.id" class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(79,70,229,0.4)]"></div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-slate-100">
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Direction</Label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button 
+                    @click="setSortDirection('asc')"
+                    class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all"
+                    :class="sort.direction === 'asc' ? 'bg-primary text-white border-primary shadow-md' : 'bg-background text-muted-foreground border-border hover:bg-muted'"
+                  >
+                    <ArrowUp class="w-3 h-3" />
+                    ASC
+                  </button>
+                  <button 
+                    @click="setSortDirection('desc')"
+                    class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all"
+                    :class="sort.direction === 'desc' ? 'bg-primary text-white border-primary shadow-md' : 'bg-background text-muted-foreground border-border hover:bg-muted'"
+                  >
+                    <ArrowDown class="w-3 h-3" />
+                    DESC
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </Popover>
       </template>
     </DataTableToolbar>
 
@@ -191,7 +349,7 @@ async function handleDelete(cat) {
     <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-300">
       <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted/50 border border-border rounded-lg text-[10px] font-bold text-muted-foreground uppercase tracking-wider shadow-sm">
         <Filter class="h-3 w-3" />
-        Filter Aktif
+        Active Filters
       </div>
       
       <div v-if="filters.is_active !== undefined" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
@@ -201,7 +359,7 @@ async function handleDelete(cat) {
       </div>
 
       <button @click="Object.keys(filters).forEach(k => { if(k !== 'search') delete filters[k] }); fetchItems()" class="text-[11px] text-muted-foreground hover:text-destructive font-bold px-2 py-1.5 rounded-lg hover:bg-destructive/5 transition-all ml-1">
-        Hapus Semua
+        Clear All
       </button>
     </div>
 
@@ -210,37 +368,39 @@ async function handleDelete(cat) {
     </div>
 
     <EmptyState 
-      v-if="!isLoading && categories.length === 0" 
+      v-if="!isLoading && categories.length === 0 && allCategories.length === 0" 
       :icon="FolderTree" 
-      title="Tidak ada kategori" 
-      description="Belum ada kategori yang ditambahkan. Klik Tambah Kategori untuk memulai."
+      title="No categories found" 
+      description="No categories have been added yet. Click Add Category to get started."
     >
       <template #actions>
         <Button variant="outline" size="sm" @click="Object.keys(filters).forEach(k => delete filters[k]); fetchItems()">
-          Reset Filter
+          Reset Filters
         </Button>
       </template>
     </EmptyState>
 
-    <div v-else class="rounded-md border border-border overflow-x-auto bg-card shadow-sm">
+    <!-- TREE VIEW -->
+    <div v-if="showTree && allCategories.length > 0" class="rounded-md border border-border overflow-x-auto bg-card shadow-sm">
       <table class="w-full text-sm">
         <thead class="bg-muted/80 text-muted-foreground border-b border-border">
           <tr>
-            <th class="px-6 py-4 font-bold text-left w-[25%]">Nama Kategori</th>
+            <th class="px-6 py-4 font-bold text-left">Category Name</th>
             <th class="px-6 py-4 font-bold hidden md:table-cell text-left w-[25%]">Slug</th>
-            <th class="px-6 py-4 font-bold hidden lg:table-cell text-left">Parent ID</th>
             <th class="px-6 py-4 font-bold text-center w-[120px]">Status</th>
-            <th v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-4 font-bold text-center w-28">Aksi</th>
+            <th v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-4 font-bold text-center w-28">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="cat in categories" :key="cat.id" class="border-t hover:bg-muted/50 transition-colors">
-            <td class="px-6 py-3 font-bold text-primary">{{ cat.name }}</td>
-            <td class="px-6 py-3 hidden md:table-cell text-muted-foreground text-left">{{ cat.slug }}</td>
-            <td class="px-6 py-3 hidden lg:table-cell font-semibold text-foreground text-left">
-              <Badge v-if="cat.parent_id" variant="outline">ID: {{ cat.parent_id }}</Badge>
-              <span v-else class="text-xs text-muted-foreground">—</span>
+          <tr v-for="cat in allCategories" :key="cat.id" class="border-t hover:bg-muted/50 transition-colors">
+            <td class="px-6 py-3">
+              <div class="flex items-center">
+                <span class="text-muted-foreground/40 text-xs font-mono whitespace-pre select-none mr-1.5">{{ cat.prefix }}{{ cat.branch }}</span>
+                <span class="font-bold text-primary">{{ cat.name }}</span>
+                <Badge v-if="cat.level === 0" variant="outline" class="ml-2 text-[9px] px-1.5 py-0">Root</Badge>
+              </div>
             </td>
+            <td class="px-6 py-3 hidden md:table-cell text-muted-foreground text-left">{{ cat.slug }}</td>
             <td class="px-6 py-3 text-center">
               <StatusIndicator :active="cat.is_active" />
             </td>
@@ -255,50 +415,106 @@ async function handleDelete(cat) {
       </table>
     </div>
 
-    <div class="mt-4 flex items-center justify-between">
-      <p class="text-sm text-muted-foreground">Total: {{ pagination.total }}</p>
-      <Pagination :current-page="pagination.page" :total-pages="pagination.totalPages" @page-change="goToPage" />
+    <!-- FLAT VIEW -->
+    <div v-if="!showTree">
+      <div v-if="!isLoading && categories.length > 0" class="rounded-md border border-border overflow-x-auto bg-card shadow-sm">
+        <table class="w-full text-sm">
+          <thead class="bg-muted/80 text-muted-foreground border-b border-border">
+            <tr>
+              <th class="px-6 py-4 font-bold text-left w-[25%]">Category Name</th>
+              <th class="px-6 py-4 font-bold hidden md:table-cell text-left w-[25%]">Slug</th>
+              <th class="px-6 py-4 font-bold hidden lg:table-cell text-left">Parent</th>
+              <th class="px-6 py-4 font-bold text-center w-[120px]">Status</th>
+              <th v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-4 font-bold text-center w-28">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="cat in categories" :key="cat.id" class="border-t hover:bg-muted/50 transition-colors">
+              <td class="px-6 py-3 font-bold text-primary">{{ cat.name }}</td>
+              <td class="px-6 py-3 hidden md:table-cell text-muted-foreground text-left">{{ cat.slug }}</td>
+              <td class="px-6 py-3 hidden lg:table-cell font-semibold text-foreground text-left">
+                <Badge v-if="cat.parent_id" variant="outline">
+                  {{ allCategories.find(c => c.id === cat.parent_id)?.name || `ID: ${cat.parent_id}` }}
+                </Badge>
+                <span v-else class="text-xs text-muted-foreground">—</span>
+              </td>
+              <td class="px-6 py-3 text-center">
+                <StatusIndicator :active="cat.is_active" />
+              </td>
+              <td v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
+                <div class="flex items-center justify-center gap-1">
+                  <button v-if="auth.hasPermission('categories.update')" @click="openEdit(cat)" class="p-1.5 rounded-lg hover:bg-accent transition-colors border border-transparent hover:border-border"><Pencil class="h-4 w-4" /></button>
+                  <button v-if="auth.hasPermission('categories.delete')" @click="handleDelete(cat)" class="p-1.5 rounded-lg hover:bg-accent text-destructive transition-colors border border-transparent hover:border-border"><Trash2 class="h-4 w-4" /></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between">
+        <p class="text-sm text-muted-foreground">Total: {{ pagination.total }}</p>
+        <Pagination :current-page="pagination.page" :total-pages="pagination.totalPages" @page-change="goToPage" />
+      </div>
     </div>
 
     <Dialog 
       :open="showModal" 
-      :title="isEditing ? 'Edit Kategori' : 'Tambah Kategori'" 
+      :title="isEditing ? 'Edit Category' : 'Add Category'" 
       max-width="max-w-lg"
       @close="showModal = false"
     >
       <form @submit.prevent="handleSave" class="space-y-6">
-        <FormField label="Nama Kategori" htmlFor="name">
-          <Input id="name" v-model="form.name" placeholder="Contoh: Berita Utama" @input="generateSlug" required />
+        <FormField label="Category Name" htmlFor="name">
+          <Input id="name" v-model="form.name" placeholder="e.g. Featured News" @input="generateSlug" required />
         </FormField>
         
         <FormField label="URL Slug" htmlFor="slug">
-          <Input id="slug" v-model="form.slug" placeholder="contoh-berita-utama" required />
+          <Input id="slug" v-model="form.slug" placeholder="featured-news" required />
         </FormField>
 
-        <FormField label="Deskripsi" htmlFor="desc">
+        <FormField label="Description" htmlFor="desc">
           <textarea 
             id="desc" 
             v-model="form.description" 
             class="w-full flex min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm"
-            placeholder="Deskripsi singkat kategori"
+            placeholder="Short description of the category"
           ></textarea>
         </FormField>
 
-        <FormField label="Parent Kategori (ID)" htmlFor="parent">
-          <Input id="parent" type="number" v-model="form.parent_id" placeholder="Kosongkan jika ini kategori utama" />
+        <FormField label="Parent Category" htmlFor="parent">
+          <div class="relative">
+            <select 
+              id="parent" 
+              v-model="form.parent_id" 
+              class="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none shadow-sm"
+              :disabled="isFetchingAll"
+            >
+              <option value="">— Leave empty if this is a root category —</option>
+              <option 
+                v-for="cat in allCategories" 
+                :key="cat.id" 
+                :value="cat.id"
+                :disabled="!cat.is_active || (isEditing && isInvalidParent(cat.id, editId))"
+              >
+                {{ cat.displayName }} {{ !cat.is_active ? '(Inactive)' : '' }}
+              </option>
+            </select>
+            <ChevronDown class="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
+          </div>
         </FormField>
 
         <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_active = !form.is_active">
           <input type="checkbox" v-model="form.is_active" id="is_active" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
           <div class="flex flex-col">
-            <Label for="is_active" class="cursor-pointer font-bold text-foreground">Status Aktif</Label>
-            <span class="text-[10px] text-muted-foreground">Tampilkan kategori ini di menu publik</span>
+            <Label for="is_active" class="cursor-pointer font-bold text-foreground">Active Status</Label>
+            <span class="text-[10px] text-muted-foreground">Show this category in the public menu</span>
           </div>
         </div>
       </form>
       <template #footer>
-        <Button variant="outline" type="button" @click="showModal = false">Batal</Button>
-        <Button type="primary" @click="handleSave" :loading="saving">Simpan Kategori</Button>
+        <Button variant="outline" type="button" @click="showModal = false">Cancel</Button>
+        <Button type="primary" @click="handleSave" :loading="saving">Save Category</Button>
       </template>
     </Dialog>
 

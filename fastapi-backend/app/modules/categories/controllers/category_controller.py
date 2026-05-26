@@ -19,16 +19,19 @@ router = APIRouter(prefix="/api/v1/categories", tags=["Categories"])
 @handle_errors
 async def get_all_categories(
     page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
+    per_page: int = Query(10, ge=1, le=1000),
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     parent_id: Optional[int] = Query(None),
+    order_by: Optional[str] = Query(None),
+    order_dir: str = Query("asc"),
     db: Session = Depends(get_db),
     _user: User = Depends(check_permission("categories.view")),
 ):
     categories, total = CategoryService.get_all(
         db, page=page, per_page=per_page, search=search,
-        is_active=is_active, parent_id=parent_id
+        is_active=is_active, parent_id=parent_id,
+        order_by=order_by, order_dir=order_dir
     )
     # Using CategoryResponse for serialization
     items = [CategoryResponse.model_validate(c).model_dump() for c in categories]

@@ -24,7 +24,7 @@ const form = ref({
 
 async function handleRegister() {
   if (form.value.password !== form.value.confirm_password) {
-    return toast({ title: 'Gagal', description: 'Konfirmasi password tidak cocok', variant: 'destructive' })
+    return toast({ title: 'Failed', description: 'Password confirmation does not match', variant: 'destructive' })
   }
 
   isLoading.value = true
@@ -36,12 +36,12 @@ async function handleRegister() {
       password: form.value.password,
     })
     
-    toast({ title: 'Berhasil', description: 'Pendaftaran berhasil! Silakan masuk.', variant: 'success' })
+    toast({ title: 'Success', description: 'Registration successful! Please login.', variant: 'success' })
     router.push('/login')
   } catch (err) {
     toast({ 
-      title: 'Gagal', 
-      description: err.response?.data?.detail || 'Gagal melakukan pendaftaran', 
+      title: 'Failed', 
+      description: err.response?.data?.detail || 'Failed to register', 
       variant: 'destructive' 
     })
   } finally {
@@ -55,7 +55,7 @@ async function handleRegister() {
     <!-- Theme & Back Actions -->
     <div class="absolute left-4 top-4">
       <router-link to="/login" class="flex items-center gap-2 p-2 rounded-md hover:bg-card/50 transition-colors text-sm font-medium text-muted-foreground hover:text-primary">
-        <ArrowLeft class="h-4 w-4" /> Kembali ke Login
+        <ArrowLeft class="h-4 w-4" /> Back to Login
       </router-link>
     </div>
     
@@ -68,8 +68,8 @@ async function handleRegister() {
 
     <div class="w-full max-w-md rounded-xl bg-card shadow-lg p-8">
       <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-primary tracking-tight">Buat Akun Baru</h1>
-        <p class="mt-2 text-sm text-muted-foreground italic">Bergabunglah dengan ekosistem CMS Template</p>
+        <h1 class="text-2xl font-bold text-primary tracking-tight">Create New Account</h1>
+        <p class="mt-2 text-sm text-muted-foreground italic">Join the CMS Template ecosystem</p>
       </div>
 
       <form @submit.prevent="handleRegister" class="space-y-4">
@@ -79,13 +79,13 @@ async function handleRegister() {
             <Input id="username" v-model="form.username" placeholder="johndoe" required />
           </div>
           <div class="space-y-1">
-            <Label for="fullname">Nama Lengkap</Label>
+            <Label for="fullname">Full Name</Label>
             <Input id="fullname" v-model="form.full_name" placeholder="John Doe" required />
           </div>
         </div>
 
         <div class="space-y-1">
-          <Label for="email">Alamat Email</Label>
+          <Label for="email">Email Address</Label>
           <Input id="email" type="email" v-model="form.email" placeholder="john@example.com" required />
         </div>
 
@@ -95,22 +95,22 @@ async function handleRegister() {
             <Input id="password" v-model="form.password" type="password" placeholder="••••••" required />
           </div>
           <div class="space-y-1">
-            <Label for="confirm">Konfirmasi</Label>
+            <Label for="confirm">Confirm Password</Label>
             <Input id="confirm" v-model="form.confirm_password" type="password" placeholder="••••••" required />
           </div>
         </div>
 
         <div class="pt-2">
           <Button class="w-full h-11" :loading="isLoading" type="submit">
-            <UserPlus v-if="!isLoading" class="mr-2 h-4 w-4" /> Daftar Sekarang
+            <UserPlus v-if="!isLoading" class="mr-2 h-4 w-4" /> Register Now
           </Button>
         </div>
       </form>
 
       <div class="mt-8 pt-6 border-t text-center">
         <p class="text-xs text-muted-foreground">
-          Sudah punya akun? 
-          <router-link to="/login" class="text-primary font-bold hover:underline">Masuk di sini</router-link>
+          Already have an account? 
+          <router-link to="/login" class="text-primary font-bold hover:underline">Login here</router-link>
         </p>
       </div>
     </div>
