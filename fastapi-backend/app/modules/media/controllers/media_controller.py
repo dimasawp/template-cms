@@ -24,10 +24,6 @@ async def upload_media(
     """Upload a file to the configured storage provider."""
     form = await request.form()
     
-    with open("debug_upload.txt", "w") as f:
-        f.write(f"Keys: {list(form.keys())}\n")
-        f.write(f"Dict: {dict(form)}\n")
-        
     file = form.get("file") or form.get("files[0]") or form.get("files")
     
     if not file or not hasattr(file, "filename"):
