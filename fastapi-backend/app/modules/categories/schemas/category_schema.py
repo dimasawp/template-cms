@@ -8,6 +8,7 @@ class CategoryCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     parent_id: Optional[int] = None
     is_active: bool = True
+    is_menu: bool = False
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
@@ -15,6 +16,7 @@ class CategoryUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     parent_id: Optional[int] = None
     is_active: Optional[bool] = None
+    is_menu: Optional[bool] = None
 
 class CategoryResponse(BaseModel):
     id: int
@@ -23,6 +25,10 @@ class CategoryResponse(BaseModel):
     description: Optional[str] = None
     parent_id: Optional[int] = None
     is_active: bool
+    order_index: int = 0
+    is_menu: bool = False
+    created_by: Optional[int] = None
+    updated_by: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -34,3 +40,11 @@ class CategoryTreeResponse(CategoryResponse):
 
     class Config:
         from_attributes = True
+
+class CategoryReorderItem(BaseModel):
+    id: int
+    parent_id: Optional[int] = None
+    order_index: int
+
+class CategoryReorder(BaseModel):
+    items: list[CategoryReorderItem]

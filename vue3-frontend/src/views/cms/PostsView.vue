@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useDataTable } from '@/composables/useDataTable'
 import { useToast } from '@/composables/useToast'
 import { useConfirmation } from '@/composables/useConfirmation'
@@ -35,6 +36,7 @@ const { toast } = useToast()
 const confirm = useConfirmation()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const { items: posts, isLoading, pagination, filters, sort, fetchItems, goToPage, setSortField, setSortDirection } = useDataTable({
   fetchData: async (params) => {
@@ -46,12 +48,34 @@ const { items: posts, isLoading, pagination, filters, sort, fetchItems, goToPage
 
 // Categories for filter & display
 const allCategories = ref([])
+const flatCategories = ref([])
+
 async function fetchCategories() {
   try {
     const { data: res } = await categoryService.getAll({ per_page: 1000 })
+    flatCategories.value = res.data.items
     allCategories.value = formatCategoryTree(res.data.items)
+    syncCategoryFromRoute()
   } catch {}
 }
+
+function syncCategoryFromRoute() {
+  if (route.query.category && flatCategories.value.length > 0) {
+    const cat = flatCategories.value.find(c => c.slug === route.query.category)
+    if (cat) {
+      filters.category_id = cat.id
+    } else {
+      delete filters.category_id
+    }
+  } else {
+    delete filters.category_id
+  }
+  fetchItems()
+}
+
+watch(() => route.query.category, () => {
+  syncCategoryFromRoute()
+})
 
 function formatCategoryTree(items) {
   const itemMap = new Map()
@@ -120,10 +144,9 @@ const getCategoryName = (catId) => {
   return path.join(' → ')
 }
 
-const handleFilterStatus = (status) => {
-  if (status === 'published') filters.is_published = true
-  else if (status === 'draft') filters.is_published = false
-  else delete filters.is_published
+const handleFilterStatus = (val) => {
+  if (val) filters.status = val
+  else delete filters.status
   pagination.page = 1
   fetchItems()
 }
@@ -143,7 +166,7 @@ const handleFilterLevel = (level) => {
 }
 
 const hasActiveFilters = computed(() => {
-  return filters.is_published !== undefined || !!filters.category_id || !!filters.category_level
+  return !!filters.status || !!filters.category_id || !!filters.category_level
 })
 
 const getSortIcon = (field) => {
@@ -209,15 +232,15 @@ onMounted(() => {
             <PopoverHeader title="Filter Posts" @close="close" />
             <div class="space-y-5">
               <div>
-                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Publish Status</Label>
-                <div class="grid grid-cols-3 gap-2">
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Status</Label>
+                <div class="grid grid-cols-2 gap-2">
                   <button 
-                    v-for="s in [{id:'', label:'ALL'}, {id:'published', label:'PUBLISHED'}, {id:'draft', label:'DRAFT'}]" 
+                    v-for="s in [{id:'', label:'ALL'}, {id:'PUBLISHED', label:'PUBLISHED'}, {id:'DRAFT', label:'DRAFT'}, {id:'ARCHIVED', label:'ARCHIVED'}]" 
                     :key="s.id"
                     @click="handleFilterStatus(s.id)"
                     class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
                     :class="[
-                      (s.id === '' && filters.is_published === undefined) || (s.id === 'published' && filters.is_published === true) || (s.id === 'draft' && filters.is_published === false) 
+                      (s.id === '' && !filters.status) || (filters.status === s.id) 
                       ? 'bg-primary text-white border-primary shadow-md' 
                       : 'bg-background text-muted-foreground border-border hover:bg-muted'
                     ]"
@@ -341,10 +364,10 @@ onMounted(() => {
         Active Filters
       </div>
 
-      <div v-if="filters.is_published !== undefined" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
+      <div v-if="filters.status" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
         <span class="opacity-70">Status:</span>
-        <span>{{ filters.is_published ? 'Published' : 'Draft' }}</span>
-        <button @click="handleFilterStatus('all')" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
+        <span>{{ filters.status }}</span>
+        <button @click="handleFilterStatus('')" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
       </div>
 
       <div v-if="filters.category_id" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
@@ -394,7 +417,7 @@ onMounted(() => {
               <span v-else class="text-xs text-muted-foreground">—</span>
             </td>
             <td class="px-6 py-3 text-center">
-              <Badge :variant="post.is_published ? 'success' : 'secondary'">{{ post.is_published ? 'Published' : 'Draft' }}</Badge>
+              <Badge :variant="post.status === 'PUBLISHED' ? 'success' : post.status === 'ARCHIVED' ? 'warning' : 'secondary'">{{ post.status }}</Badge>
             </td>
             <td class="px-6 py-3 hidden lg:table-cell text-xs text-muted-foreground text-left">
               {{ new Date(post.created_at + 'Z').toLocaleString('en-US') }}

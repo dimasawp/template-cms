@@ -23,7 +23,7 @@ const form = ref({
   slug: '',
   category_id: '',
   content: '',
-  is_published: true
+  status: 'DRAFT'
 })
 
 const editorConfig = {
@@ -101,7 +101,7 @@ async function loadPost() {
       slug: post.slug,
       category_id: post.category_id || '',
       content: post.content || '',
-      is_published: post.is_published
+      status: post.status || 'DRAFT'
     }
   } catch (e) {
     toast({ title: 'Error', message: 'Failed to load post', variant: 'destructive' })
@@ -226,13 +226,17 @@ async function handleSave() {
           </FormField>
 
           <div class="pt-3 border-t border-border">
-            <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_published = !form.is_published">
-              <input type="checkbox" v-model="form.is_published" id="is_published" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
-              <div class="flex flex-col">
-                <Label for="is_published" class="cursor-pointer font-bold text-foreground">Publish Immediately</Label>
-                <span class="text-[10px] text-muted-foreground">Visible to the public</span>
-              </div>
-            </div>
+            <FormField label="Status" htmlFor="status">
+              <select 
+                id="status" 
+                v-model="form.status"
+                class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus:ring-2 focus:ring-primary transition-all"
+              >
+                <option value="DRAFT">Draft</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+            </FormField>
           </div>
         </div>
       </div>

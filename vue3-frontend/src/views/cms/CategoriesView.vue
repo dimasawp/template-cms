@@ -20,6 +20,7 @@ import PopoverHeader from '@/components/ui/PopoverHeader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import DataTableToolbar from '@/components/common/DataTableToolbar.vue'
+import CategoryTreeItem from './CategoryTreeItem.vue'
 import { 
   Pencil, 
   Trash2, 
@@ -47,10 +48,14 @@ const { items: categories, isLoading, pagination, filters, sort, fetchItems, goT
   perPage: 10
 })
 
-const handleFilterStatus = (status) => {
-  if (status === 'active') filters.is_active = true
-  else if (status === 'inactive') filters.is_active = false
-  else delete filters.is_active
+const handleFilterStatus = (val) => {
+  filters.is_active = val === '' ? null : (val === 'active')
+  pagination.page = 1
+  fetchItems()
+}
+
+const handleFilterLevel = (val) => {
+  filters.level = val === '' ? null : parseInt(val)
   pagination.page = 1
   fetchItems()
 }
@@ -64,15 +69,16 @@ const getSortIcon = (field) => {
 const showModal = ref(false)
 const isEditing = ref(false)
 const saving = ref(false)
-const form = ref({ name: '', slug: '', description: '', parent_id: '', is_active: true })
+const form = ref({ name: '', slug: '', description: '', parent_id: '', is_active: true, is_menu: false })
 const editId = ref(null)
 
 const allCategories = ref([])
+const categoryTree = ref([])
 const isFetchingAll = ref(false)
 const showTree = ref(true)
 
 const hasActiveFilters = computed(() => {
-  return filters.is_active !== undefined
+  return filters.is_active !== undefined && filters.is_active !== null || filters.level !== undefined && filters.level !== null
 })
 
 function generateSlug() {
@@ -85,7 +91,9 @@ async function fetchAllCategories() {
   isFetchingAll.value = true
   try {
     const { data: res } = await categoryService.getAll({ per_page: 1000 })
-    allCategories.value = formatCategoryTree(res.data.items)
+    const formatted = formatCategoryTree(res.data.items)
+    allCategories.value = formatted.flat
+    categoryTree.value = formatted.tree
   } catch (err) {
     console.error("Failed to fetch all categories", err)
   } finally {
@@ -108,6 +116,15 @@ function formatCategoryTree(items) {
     }
   })
 
+  // Sort children by order_index
+  const sortTree = (nodes) => {
+    nodes.sort((a, b) => a.order_index - b.order_index)
+    nodes.forEach(n => {
+      if (n.children.length > 0) sortTree(n.children)
+    })
+  }
+  sortTree(tree)
+
   const flat = []
   function traverse(nodes, depth = 0, prefix = '') {
     nodes.forEach((node, index) => {
@@ -126,14 +143,12 @@ function formatCategoryTree(items) {
         displayName: prefix + branch + node.name
       })
       
-      // Use IDEOGRAPHIC SPACE (\u3000) or em space (\u2003) for better alignment, 
-      // but standard spaces in monospace font work best.
       const nextPrefix = prefix + (depth > 0 ? (isLast ? '\u00A0\u00A0\u00A0\u00A0' : '│\u00A0\u00A0\u00A0') : '');
       traverse(node.children, depth + 1, nextPrefix)
     })
   }
   traverse(tree)
-  return flat
+  return { flat, tree }
 }
 
 function isInvalidParent(targetCatId, currentCatId) {
@@ -149,7 +164,7 @@ function isInvalidParent(targetCatId, currentCatId) {
 function openCreate() {
   isEditing.value = false
   editId.value = null
-  form.value = { name: '', slug: '', description: '', parent_id: '', is_active: true }
+  form.value = { name: '', slug: '', description: '', parent_id: '', is_active: true, is_menu: false }
   showModal.value = true
   fetchAllCategories()
 }
@@ -162,7 +177,8 @@ function openEdit(cat) {
     slug: cat.slug, 
     description: cat.description || '', 
     parent_id: cat.parent_id || '', 
-    is_active: cat.is_active 
+    is_active: cat.is_active,
+    is_menu: cat.is_menu
   }
   showModal.value = true
   fetchAllCategories()
@@ -201,6 +217,46 @@ async function handleDelete(cat) {
     fetchAllCategories()
   } catch {
     toast({ title: 'Failed to delete', variant: 'destructive' })
+  }
+}
+
+async function handleTreeChange() {
+  const items = []
+  
+  // Find the root sortable container
+  const rootContainer = document.querySelector('.sortable-root > .sortable-container')
+  if (!rootContainer) {
+    console.error("Root sortable container not found")
+    return
+  }
+  
+  function traverseDOM(container, parentId = null) {
+    const children = container.querySelectorAll(':scope > .tree-item-wrapper')
+    children.forEach((child, index) => {
+      const id = child.getAttribute('data-id')
+      if (id) {
+        items.push({
+          id: parseInt(id),
+          parent_id: parentId,
+          order_index: index
+        })
+      }
+      const childrenContainer = child.querySelector(':scope > .tree-children-container > .sortable-container')
+      if (childrenContainer) {
+        traverseDOM(childrenContainer, parseInt(id))
+      }
+    })
+  }
+  
+  traverseDOM(rootContainer)
+  
+  try {
+    await categoryService.reorder({ items })
+    toast({ title: 'Order saved', variant: 'success' })
+    fetchAllCategories() // Refresh to ensure Vue state matches saved DOM state
+  } catch (err) {
+    toast({ title: 'Failed to reorder', variant: 'destructive' })
+    fetchAllCategories() // revert
   }
 }
 
@@ -271,12 +327,31 @@ onMounted(() => {
                     @click="handleFilterStatus(s.id)"
                     class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
                     :class="[
-                      (s.id === '' && filters.is_active === undefined) || (s.id === 'active' && filters.is_active === true) || (s.id === 'inactive' && filters.is_active === false) 
+                      (s.id === '' && filters.is_active === null) || (s.id === 'active' && filters.is_active === true) || (s.id === 'inactive' && filters.is_active === false) 
                       ? 'bg-primary text-white border-primary shadow-md' 
                       : 'bg-background text-muted-foreground border-border hover:bg-muted'
                     ]"
                   >
                     {{ s.label }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Category Level</Label>
+                <div class="grid grid-cols-4 gap-2">
+                  <button 
+                    v-for="l in [{id:'', label:'ALL'}, {id:1, label:'Lvl 1'}, {id:2, label:'Lvl 2'}, {id:3, label:'Lvl 3'}]" 
+                    :key="l.id"
+                    @click="handleFilterLevel(l.id)"
+                    class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
+                    :class="[
+                      (l.id === '' && filters.level === null) || (filters.level === l.id) 
+                      ? 'bg-primary text-white border-primary shadow-md' 
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    ]"
+                  >
+                    {{ l.label }}
                   </button>
                 </div>
               </div>
@@ -352,10 +427,16 @@ onMounted(() => {
         Active Filters
       </div>
       
-      <div v-if="filters.is_active !== undefined" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
+      <div v-if="filters.is_active !== undefined && filters.is_active !== null" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
         <span class="opacity-70">Status:</span>
         <span>{{ filters.is_active ? 'Active' : 'Inactive' }}</span>
-        <button @click="handleFilterStatus('all')" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
+        <button @click="handleFilterStatus('')" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
+      </div>
+
+      <div v-if="filters.level !== undefined && filters.level !== null" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[11px] font-bold shadow-sm transition-all hover:bg-primary/20">
+        <span class="opacity-70">Level:</span>
+        <span>Lvl {{ filters.level }}</span>
+        <button @click="handleFilterLevel('')" class="ml-1 hover:text-primary-foreground transition-colors"><X class="h-3.5 w-3.5" /></button>
       </div>
 
       <button @click="Object.keys(filters).forEach(k => { if(k !== 'search') delete filters[k] }); fetchItems()" class="text-[11px] text-muted-foreground hover:text-destructive font-bold px-2 py-1.5 rounded-lg hover:bg-destructive/5 transition-all ml-1">
@@ -381,38 +462,20 @@ onMounted(() => {
     </EmptyState>
 
     <!-- TREE VIEW -->
-    <div v-if="showTree && allCategories.length > 0" class="rounded-md border border-border overflow-x-auto bg-card shadow-sm">
-      <table class="w-full text-sm">
-        <thead class="bg-muted/80 text-muted-foreground border-b border-border">
-          <tr>
-            <th class="px-6 py-4 font-bold text-left">Category Name</th>
-            <th class="px-6 py-4 font-bold hidden md:table-cell text-left w-[25%]">Slug</th>
-            <th class="px-6 py-4 font-bold text-center w-[120px]">Status</th>
-            <th v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-4 font-bold text-center w-28">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="cat in allCategories" :key="cat.id" class="border-t hover:bg-muted/50 transition-colors">
-            <td class="px-6 py-3">
-              <div class="flex items-center">
-                <span class="text-muted-foreground/40 text-xs font-mono whitespace-pre select-none mr-1.5">{{ cat.prefix }}{{ cat.branch }}</span>
-                <span class="font-bold text-primary">{{ cat.name }}</span>
-                <Badge v-if="cat.level === 0" variant="outline" class="ml-2 text-[9px] px-1.5 py-0">Root</Badge>
-              </div>
-            </td>
-            <td class="px-6 py-3 hidden md:table-cell text-muted-foreground text-left">{{ cat.slug }}</td>
-            <td class="px-6 py-3 text-center">
-              <StatusIndicator :active="cat.is_active" />
-            </td>
-            <td v-if="auth.hasPermission('categories.update') || auth.hasPermission('categories.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
-              <div class="flex items-center justify-center gap-1">
-                <button v-if="auth.hasPermission('categories.update')" @click="openEdit(cat)" class="p-1.5 rounded-lg hover:bg-accent transition-colors border border-transparent hover:border-border"><Pencil class="h-4 w-4" /></button>
-                <button v-if="auth.hasPermission('categories.delete')" @click="handleDelete(cat)" class="p-1.5 rounded-lg hover:bg-accent text-destructive transition-colors border border-transparent hover:border-border"><Trash2 class="h-4 w-4" /></button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-if="showTree" class="rounded-md border border-border bg-card shadow-sm overflow-hidden">
+      <div class="bg-muted/80 text-muted-foreground border-b border-border flex items-center justify-between p-3 px-6 text-sm font-bold">
+        <div>Category Structure</div>
+        <div class="text-xs font-normal opacity-70">Drag handles to reorder</div>
+      </div>
+      <div class="sortable-root">
+        <CategoryTreeItem 
+          v-if="categoryTree && categoryTree.length > 0"
+          :categories="categoryTree" 
+          @change="handleTreeChange"
+          @edit="openEdit"
+          @delete="handleDelete"
+        />
+      </div>
     </div>
 
     <!-- FLAT VIEW -->
@@ -504,11 +567,21 @@ onMounted(() => {
           </div>
         </FormField>
 
-        <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_active = !form.is_active">
-          <input type="checkbox" v-model="form.is_active" id="is_active" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
-          <div class="flex flex-col">
-            <Label for="is_active" class="cursor-pointer font-bold text-foreground">Active Status</Label>
-            <span class="text-[10px] text-muted-foreground">Show this category in the public menu</span>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_active = !form.is_active">
+            <input type="checkbox" v-model="form.is_active" id="is_active" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
+            <div class="flex flex-col">
+              <Label for="is_active" class="cursor-pointer font-bold text-foreground">Active Status</Label>
+              <span class="text-[10px] text-muted-foreground">Show in public API</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-3 p-4 bg-muted/40 border border-border rounded-xl cursor-pointer hover:bg-muted/60 transition-colors" @click="form.is_menu = !form.is_menu">
+            <input type="checkbox" v-model="form.is_menu" id="is_menu" class="rounded w-4 h-4 text-primary focus:ring-primary shadow-sm" @click.stop />
+            <div class="flex flex-col">
+              <Label for="is_menu" class="cursor-pointer font-bold text-foreground">Set as Menu</Label>
+              <span class="text-[10px] text-muted-foreground">Show in CMS sidebar</span>
+            </div>
           </div>
         </div>
       </form>

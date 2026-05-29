@@ -21,7 +21,7 @@ async def get_all_posts(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    is_published: Optional[bool] = Query(None),
+    status: Optional[str] = Query(None),
     category_id: Optional[int] = Query(None),
     category_level: Optional[int] = Query(None),
     order_by: Optional[str] = Query(None),
@@ -31,7 +31,7 @@ async def get_all_posts(
 ):
     posts, total = PostService.get_all(
         db, page=page, per_page=per_page, search=search,
-        is_published=is_published, category_id=category_id,
+        status=status, category_id=category_id,
         category_level=category_level,
         order_by=order_by, order_dir=order_dir
     )

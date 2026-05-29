@@ -10,6 +10,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const appVersion = ref('1.1.0')
   const isLoading = ref(false)
   const isInitialized = ref(false)
+  const categoryMaxLevel = ref(3)
 
   async function fetchSettings() {
     isLoading.value = true
@@ -22,6 +23,7 @@ export const useSettingsStore = defineStore('settings', () => {
       if (settings.registration_enabled) registrationEnabled.value = settings.registration_enabled === 'true'
       if (settings.enable_websockets !== undefined) enableWebsockets.value = settings.enable_websockets
       if (settings.app_version) appVersion.value = settings.app_version
+      if (settings.category_max_level) categoryMaxLevel.value = parseInt(settings.category_max_level)
     } catch (error) {
       console.error('Failed to fetch settings:', error)
     } finally {
@@ -38,6 +40,7 @@ export const useSettingsStore = defineStore('settings', () => {
     appVersion,
     isLoading,
     isInitialized,
+    categoryMaxLevel,
     fetchSettings
   }
 })

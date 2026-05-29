@@ -23,6 +23,8 @@ async def get_all_categories(
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     parent_id: Optional[int] = Query(None),
+    is_menu: Optional[bool] = Query(None),
+    level: Optional[int] = Query(None),
     order_by: Optional[str] = Query(None),
     order_dir: str = Query("asc"),
     db: Session = Depends(get_db),
@@ -30,8 +32,8 @@ async def get_all_categories(
 ):
     categories, total = CategoryService.get_all(
         db, page=page, per_page=per_page, search=search,
-        is_active=is_active, parent_id=parent_id,
-        order_by=order_by, order_dir=order_dir
+        is_active=is_active, parent_id=parent_id, is_menu=is_menu,
+        level=level, order_by=order_by, order_dir=order_dir
     )
     # Using CategoryResponse for serialization
     items = [CategoryResponse.model_validate(c).model_dump() for c in categories]
@@ -49,6 +51,18 @@ async def get_category(
     if not category:
         raise NotFoundException("Category not found")
     return success_response(data=CategoryResponse.model_validate(category).model_dump())
+
+
+@router.post("/reorder")
+@handle_errors
+async def reorder_categories(
+    data: __import__('app.modules.categories.schemas.category_schema', fromlist=['CategoryReorder']).CategoryReorder,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(check_permission("categories.update")),
+):
+    CategoryService.reorder(db, data, actor_id=current_user.id, request=request)
+    return success_response(message="Categories reordered successfully")
 
 
 @router.post("")

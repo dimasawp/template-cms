@@ -20,16 +20,16 @@ class PostService(BaseService):
         page: int = 1,
         per_page: int = 10,
         search: Optional[str] = None,
-        is_published: Optional[bool] = None,
+        status: Optional[str] = None,
         category_id: Optional[int] = None,
         category_level: Optional[int] = None,
         order_by: Optional[str] = None,
         order_dir: str = "asc",
     ):
-        query = db.query(Post)
+        query = db.query(Post).filter(Post.deleted_at == None)
 
-        if is_published is not None:
-            query = query.filter(Post.is_published == is_published)
+        if status is not None:
+            query = query.filter(Post.status == status)
             
         if category_id is not None:
             from app.modules.categories.services.category_service import CategoryService
@@ -38,8 +38,7 @@ class PostService(BaseService):
             
         if category_level is not None:
             from app.modules.categories.models.category_model import Category
-            from app.modules.categories.services.category_service import CategoryService
-            all_cats = db.query(Category).all()
+            all_cats = db.query(Category).filter(Category.deleted_at == None).all()
             parent_map = {c.id: c.parent_id for c in all_cats}
             
             def get_level(cid):
@@ -82,7 +81,18 @@ class PostService(BaseService):
             if not cat:
                 raise NotFoundException("Category not found")
 
-        post = Post(**data.model_dump())
+        post_data = data.model_dump()
+        
+        # Serialize additional_contents blocks to dicts for JSON storage
+        if post_data.get("additional_contents"):
+            post_data["additional_contents"] = [
+                block if isinstance(block, dict) else block.model_dump()
+                for block in post_data["additional_contents"]
+            ]
+        
+        post = Post(**post_data)
+        post.created_by = actor_id
+        post.updated_by = actor_id
         db.add(post)
         db.commit()
         db.refresh(post)
@@ -112,15 +122,25 @@ class PostService(BaseService):
             if not cat:
                 raise NotFoundException("Category not found")
 
+        # Serialize additional_contents blocks to dicts for JSON storage
+        if "additional_contents" in update_data and update_data["additional_contents"]:
+            update_data["additional_contents"] = [
+                block if isinstance(block, dict) else block.model_dump()
+                for block in update_data["additional_contents"]
+            ]
+
         has_changes = False
         for k, v in update_data.items():
-            if getattr(post, k) != v:
+            current_val = getattr(post, k)
+            # Use str comparison for enum-like values
+            if str(current_val) != str(v) if isinstance(v, str) and isinstance(current_val, str) else current_val != v:
                 has_changes = True
                 setattr(post, k, v)
 
         if not has_changes:
             raise BadRequestException("No changes detected")
 
+        post.updated_by = actor_id
         db.commit()
         db.refresh(post)
 
@@ -139,7 +159,11 @@ class PostService(BaseService):
             raise NotFoundException("Post not found")
         
         title = post.title
-        db.delete(post)
+        
+        # Soft delete
+        from app.helpers.date_helper import get_now_wib
+        post.deleted_at = get_now_wib()
+        post.updated_by = actor_id
         db.commit()
 
         AuditService.log(

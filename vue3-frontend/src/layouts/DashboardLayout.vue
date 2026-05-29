@@ -12,6 +12,7 @@ import {
 import Avatar from '@/components/ui/Avatar.vue'
 import { useConfirmation } from '@/composables/useConfirmation'
 import { useRealtime } from '@/composables/useRealtime'
+import { categoryService } from '@/services/categoryService'
 import MaintenanceBanner from '@/components/common/MaintenanceBanner.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import Breadcrumbs from '@/components/common/Breadcrumbs.vue'
@@ -37,6 +38,8 @@ const toggleGroup = (groupName) => {
   }
 }
 
+const dynamicMenuLinks = ref([])
+
 const menuGroups = computed(() => [
   {
     name: null, // No label for the first group
@@ -48,6 +51,7 @@ const menuGroups = computed(() => [
     name: 'Web Content',
     items: [
       { name: 'Posts', icon: FileText, route: '/posts', permission: 'posts.view' },
+      ...dynamicMenuLinks.value,
       { name: 'Categories', icon: FolderTree, route: '/categories', permission: 'categories.view' }
     ]
   },
@@ -72,6 +76,19 @@ const visibleGroups = computed(() => {
 
 function isActive(path) {
   if (path === '/dashboard') return route.path === path
+  
+  // If the menu link has a query parameter (e.g. /posts?category=artikel)
+  if (path.includes('?')) {
+    // Check if the current full path matches the menu's path with query
+    // e.g. route.fullPath might be /posts?category=artikel
+    return route.fullPath === path
+  }
+  
+  // If this is the generic "/posts" menu, don't highlight it if we have a category query!
+  if (path === '/posts' && route.query.category) {
+    return false;
+  }
+  
   return route.path.startsWith(path)
 }
 
@@ -95,6 +112,18 @@ onMounted(async () => {
   try {
     const { data: res } = await notificationService.badge()
     unreadCount.value = res.data.unread_count
+  } catch { /* ignore */ }
+  
+  // Fetch dynamic menus
+  try {
+    const { data: res } = await categoryService.getAll({ is_active: true, is_menu: true, per_page: 100 })
+    dynamicMenuLinks.value = res.data.items.map(cat => ({
+      name: cat.name,
+      icon: FileText, // Default icon for dynamic posts
+      route: `/posts?category=${cat.slug}`, // Or however we want to route it
+      // No strict permission needed, or maybe 'posts.view' since they are posts
+      permission: 'posts.view' 
+    }))
   } catch { /* ignore */ }
 })
 </script>

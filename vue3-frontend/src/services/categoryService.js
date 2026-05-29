@@ -5,5 +5,6 @@ export const categoryService = {
   getById: (id) => api.get(`/categories/${id}`),
   create: (data) => api.post('/categories', data),
   update: (id, data) => api.put(`/categories/${id}`, data),
-  delete: (id) => api.delete(`/categories/${id}`)
+  delete: (id) => api.delete(`/categories/${id}`),
+  reorder: (data) => api.post('/categories/reorder', data)
 }
