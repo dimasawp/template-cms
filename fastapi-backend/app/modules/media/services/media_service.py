@@ -49,6 +49,46 @@ class MediaService:
         return db.query(Media).filter(Media.id == media_id, Media.deleted_at == None).first()
 
     @staticmethod
+    def get_all_media(
+        db: Session, 
+        skip: int = 0, 
+        limit: int = 50, 
+        search: Optional[str] = None,
+        file_type: Optional[str] = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc"
+    ) -> tuple[int, list[Media]]:
+        query = db.query(Media).filter(Media.deleted_at == None)
+        
+        if search:
+            query = query.filter(Media.original_name.ilike(f"%{search}%"))
+            
+        if file_type:
+            if file_type == "image":
+                query = query.filter(Media.mime_type.like("image/%"))
+            elif file_type == "document":
+                query = query.filter(~Media.mime_type.like("image/%"))
+        
+        # Sorting
+        order_col = Media.id
+        if sort_by == "name":
+            order_col = Media.original_name
+        elif sort_by == "size":
+            order_col = Media.size
+        elif sort_by == "created_at":
+            order_col = Media.id # id is sequential, works as created_at
+            
+        if sort_order == "asc":
+            query = query.order_by(order_col.asc())
+        else:
+            query = query.order_by(order_col.desc())
+            
+        total = query.count()
+        items = query.offset(skip).limit(limit).all()
+        return total, items
+
+
+    @staticmethod
     def delete_media(db: Session, media_id: int, user_id: Optional[int] = None, request = None) -> bool:
         media = MediaService.get_media(db, media_id)
         if not media:

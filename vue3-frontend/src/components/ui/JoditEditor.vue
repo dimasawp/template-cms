@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Jodit } from 'jodit'
 import 'jodit/esm/plugins/all.js'
 import 'jodit/es2021/jodit.min.css'
+import MediaManagerModal from '@/components/common/MediaManagerModal.vue'
 
 const props = defineProps({
   modelValue: {
@@ -22,6 +23,29 @@ const { isDark } = useTheme()
 
 const editorRef = ref(null)
 let editorInstance = null
+
+const isMediaModalOpen = ref(false)
+
+const insertMedia = (url) => {
+  if (!editorInstance) return
+  
+  // Clean URL to check extension ignoring query params
+  const cleanUrl = url.split('?')[0]
+  const ext = cleanUrl.split('.').pop().toLowerCase()
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp']
+  
+  if (imageExts.includes(ext)) {
+    editorInstance.s.insertImage(url, null, '100%')
+  } else {
+    const filename = cleanUrl.split('/').pop() || 'File'
+    const a = editorInstance.createInside.element('a')
+    a.setAttribute('href', url)
+    a.setAttribute('target', '_blank')
+    a.setAttribute('style', 'color: #2563eb; text-decoration: underline; font-weight: bold;')
+    a.textContent = '📄 Download ' + filename
+    editorInstance.s.insertNode(a)
+  }
+}
 
 onMounted(() => {
   editorInstance = Jodit.make(editorRef.value, {
@@ -71,7 +95,7 @@ onMounted(() => {
           const a = this.createInside.element('a')
           a.setAttribute('href', url)
           a.setAttribute('target', '_blank')
-          a.setAttribute('class', 'text-primary font-bold hover:underline')
+          a.setAttribute('style', 'color: #2563eb; text-decoration: underline; font-weight: bold;')
           a.textContent = '📄 Download ' + filename
           this.s.insertNode(a)
         }
@@ -80,7 +104,17 @@ onMounted(() => {
         this.events.fire('errorMessage', 'Gagal mengupload file: ' + (err.message || 'Error server'))
       }
     },
-    buttons: ['source', '|', 'bold', 'strikethrough', 'underline', 'italic', '|', 'superscript', 'subscript', '|', 'ul', 'ol', '|', 'outdent', 'indent', '|', 'font', 'fontsize', 'brush', 'paragraph', '|', 'image', 'video', 'file', 'table', 'link', '|', 'align', 'undo', 'redo', '\n', 'hr', 'eraser', 'copyformat', '|', 'symbol', 'fullsize', 'print', 'preview', 'about', 'speechRecognize'],
+    extraButtons: [
+      {
+        name: 'mediaLibrary',
+        iconURL: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+        tooltip: 'Select from Media Library',
+        exec: (editor) => {
+          isMediaModalOpen.value = true
+        }
+      }
+    ],
+    buttons: ['mediaLibrary', '|', 'source', '|', 'bold', 'strikethrough', 'underline', 'italic', '|', 'superscript', 'subscript', '|', 'ul', 'ol', '|', 'outdent', 'indent', '|', 'font', 'fontsize', 'brush', 'paragraph', '|', 'image', 'video', 'file', 'table', 'link', '|', 'align', 'undo', 'redo', '\n', 'hr', 'eraser', 'copyformat', '|', 'symbol', 'fullsize', 'print', 'preview', 'about'],
     ...props.config
   })
   
@@ -105,5 +139,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <textarea ref="editorRef"></textarea>
+  <div class="jodit-wrapper">
+    <textarea ref="editorRef"></textarea>
+    <MediaManagerModal 
+      :open="isMediaModalOpen" 
+      mode="select" 
+      @close="isMediaModalOpen = false" 
+      @select="insertMedia" 
+    />
+  </div>
 </template>

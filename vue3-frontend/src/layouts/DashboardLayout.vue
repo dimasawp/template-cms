@@ -16,6 +16,8 @@ import { categoryService } from '@/services/categoryService'
 import MaintenanceBanner from '@/components/common/MaintenanceBanner.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import Breadcrumbs from '@/components/common/Breadcrumbs.vue'
+import MediaManagerModal from '@/components/common/MediaManagerModal.vue'
+import { FolderOpen } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -27,6 +29,7 @@ const { status: maintenanceStatus } = useRealtime()
 
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
+const isMediaManagerOpen = ref(false)
 
 const openGroups = ref(['Web Content', 'Settings'])
 
@@ -231,11 +234,21 @@ onMounted(async () => {
           <Menu class="h-5 w-5" />
         </button>
 
+        <!-- Media Manager toggle on the left -->
+        <button 
+          @click="isMediaManagerOpen = true" 
+          class="ml-2 lg:ml-0 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 dark:bg-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/30 transition-all font-semibold text-sm border border-indigo-500/20"
+          title="Manage Uploaded Files & Media"
+        >
+          <FolderOpen class="h-4 w-4" />
+          <span>Media Library</span>
+        </button>
+
         <div class="flex-1" />
 
         <div class="flex items-center gap-2">
           <!-- Theme toggle -->
-          <button @click="toggleTheme" class="p-2 rounded-md hover:bg-accent">
+          <button @click="toggleTheme" class="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground" title="Toggle Theme">
             <Sun v-if="isDark" class="h-5 w-5" />
             <Moon v-else class="h-5 w-5" />
           </button>
@@ -317,6 +330,8 @@ onMounted(async () => {
     @cancel="confirm.onCancel"
   />
   <Toaster />
+  
+  <MediaManagerModal :open="isMediaManagerOpen" @close="isMediaManagerOpen = false" />
 </template>
 
 <style scoped>

@@ -24,5 +24,5 @@ COPY . .
 # Expose backend port
 EXPOSE 8000
 
-# Run migrations, seeds, and start server
-CMD ["sh", "-c", "python -m app.seeds.seed && alembic stamp head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+# Start server (run migrations, then uvicorn)
+CMD ["sh", "-c", "alembic upgrade head || echo 'Migrations failed or not configured' && uvicorn main:app --host 0.0.0.0 --port 8000"]

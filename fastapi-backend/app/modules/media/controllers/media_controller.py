@@ -60,3 +60,59 @@ async def view_media(
     # We could check permissions here based on DB records
     # For now, we serve it as a file
     return FileResponse(path)
+
+@router.get("")
+@router.get("/")
+@handle_errors
+async def get_all_media(
+    skip: int = 0,
+    limit: int = 50,
+    search: str = None,
+    file_type: str = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a list of all uploaded media (Requires Auth)."""
+    total, items = MediaService.get_all_media(
+        db, skip=skip, limit=limit, search=search, 
+        file_type=file_type, sort_by=sort_by, sort_order=sort_order
+    )
+    return success_response(
+        data={
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "items": [
+                {
+                    "id": item.id,
+                    "filename": item.filename,
+                    "original_name": item.original_name,
+                    "path": item.path,
+                    "size": item.size,
+                    "mime_type": item.mime_type,
+                    "storage_mode": item.storage_mode,
+                    "created_at": item.created_at
+                }
+                for item in items
+            ]
+        },
+        message="Media retrieved successfully"
+    )
+
+@router.delete("/{media_id}")
+@handle_errors
+async def delete_media(
+    media_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a media file (Requires Auth)."""
+    success = MediaService.delete_media(db, media_id=media_id, user_id=current_user.id, request=request)
+    if not success:
+        raise HTTPException(status_code=404, detail="Media not found or already deleted")
+    
+    return success_response(message="Media deleted successfully")
+

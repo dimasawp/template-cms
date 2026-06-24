@@ -41,7 +41,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleEsc))
           </div>
           
           <!-- Body -->
-          <div class="px-6 py-4 overflow-y-auto max-h-[80vh] custom-scrollbar">
+          <div class="px-6 py-4 overflow-y-auto flex-1 max-h-[85vh] custom-scrollbar">
             <slot />
           </div>
           
@@ -49,6 +49,9 @@ onUnmounted(() => window.removeEventListener('keydown', handleEsc))
           <div v-if="$slots.footer" class="px-6 py-4 border-t border-border bg-muted/30 rounded-b-xl flex justify-end gap-2">
             <slot name="footer" />
           </div>
+
+          <!-- Overlay (Modal bounds) -->
+          <slot name="overlay" />
         </div>
       </div>
     </Transition>
