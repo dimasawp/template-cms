@@ -78,6 +78,8 @@ docker compose up -d --build backend
 
 # Rebuild Frontend container (Vue) after editing JS/Vue code:
 docker compose up -d --build frontend
+
+docker compose up -d --build public_frontend
 ```
 
 ## 📦 Tech Stack

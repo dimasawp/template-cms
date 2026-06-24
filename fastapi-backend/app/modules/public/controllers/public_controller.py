@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 from typing import Optional
 
 from app.core.database import get_db
@@ -34,7 +35,7 @@ async def get_public_posts(
         query = query.filter(Post.category_id == cat.id)
         
     total = query.count()
-    items = query.order_by(desc(Post.created_at)).offset((page - 1) * per_page).limit(per_page).all()
+    items = query.options(joinedload(Post.author)).order_by(desc(Post.created_at)).offset((page - 1) * per_page).limit(per_page).all()
     
     return success_response(
         data={
@@ -45,7 +46,11 @@ async def get_public_posts(
                     "slug": p.slug,
                     "thumbnail": p.thumbnail,
                     "created_at": p.created_at.isoformat(),
-                    "category": p.category_id # In a real app we'd join and return category slug/name
+                    "category": p.category_id, # In a real app we'd join and return category slug/name
+                    "author": {
+                        "username": p.author.username,
+                        "full_name": p.author.full_name
+                    } if p.author else None
                 }
                 for p in items
             ],
@@ -67,7 +72,7 @@ async def get_public_post_detail(
     db: Session = Depends(get_db)
 ):
     """Get a specific post detail (PUBLISHED or ARCHIVED)."""
-    post = db.query(Post).filter(
+    post = db.query(Post).options(joinedload(Post.author)).filter(
         Post.slug == slug, 
         Post.status.in_(["PUBLISHED", "ARCHIVED"]),
         Post.deleted_at == None
@@ -84,7 +89,11 @@ async def get_public_post_detail(
         "content": post.content,
         "additional_contents": post.additional_contents,
         "status": post.status,
-        "created_at": post.created_at.isoformat()
+        "created_at": post.created_at.isoformat(),
+        "author": {
+            "username": post.author.username,
+            "full_name": post.author.full_name
+        } if post.author else None
     })
 
 @router.get("/categories")
