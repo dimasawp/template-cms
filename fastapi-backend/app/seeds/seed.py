@@ -36,6 +36,14 @@ def seed_permissions(db: Session):
         {"id": 12, "name": "settings.update", "description": "Update settings"},
         {"id": 13, "name": "sessions.view",   "description": "View active sessions"},
         {"id": 14, "name": "sessions.delete", "description": "Revoke sessions (kick)"},
+        {"id": 15, "name": "categories.view",   "description": "View categories"},
+        {"id": 16, "name": "categories.create", "description": "Create categories"},
+        {"id": 17, "name": "categories.update", "description": "Update categories"},
+        {"id": 18, "name": "categories.delete", "description": "Delete categories"},
+        {"id": 19, "name": "posts.view",      "description": "View posts"},
+        {"id": 20, "name": "posts.create",    "description": "Create posts"},
+        {"id": 21, "name": "posts.update",    "description": "Update posts"},
+        {"id": 22, "name": "posts.delete",    "description": "Delete posts"},
     ]
     for data in permissions:
         if not db.query(Permission).filter_by(name=data["name"]).first():
@@ -131,6 +139,9 @@ def run():
     import app.modules.audit.models.audit_model               # noqa: F401
     import app.modules.auth.models.session_model              # noqa: F401
     import app.modules.settings.models.setting_model          # noqa: F401
+    import app.modules.users.models.password_reset_model      # noqa: F401
+    import app.modules.categories.models.category_model       # noqa: F401
+    import app.modules.posts.models.post_model                # noqa: F401
 
     print(f"\n{'='*50}")
     print(f"  DATABASE SEEDER  (ENV={settings.ENV})")
