@@ -45,6 +45,41 @@ npm run dev                 # App runs at http://localhost:5173
 | `superadmin` | `admin123` | Super Admin  |
 | `admin`      | `admin123` | Admin        |
 
+## 🐳 Docker Deployment
+
+The project is fully dockerized. To start everything (Database, Backend, Frontend):
+
+```bash
+docker compose up -d --build
+```
+- **Backend API**: `http://localhost:8000`
+- **Frontend Dashboard**: `http://localhost:5173`
+
+### Database Reset (Clean Wipe)
+If you want to completely empty the database and re-seed it with default data (e.g., during development), run these commands:
+
+```bash
+# 1. Drop and Recreate the database inside the MySQL container
+docker compose exec db mysql -u root -proot -e "DROP DATABASE IF EXISTS db_cms_template; CREATE DATABASE db_cms_template"
+
+# 2. Re-create all tables and insert default seed data (Super Admin & Settings)
+docker compose exec backend python -m app.seeds.seed
+
+# 3. Tell Alembic that the database is already up to date
+docker compose exec backend alembic stamp head
+```
+
+### Applying Code Changes (Rebuild)
+Because the application runs entirely inside Docker without code bind mounts in production/default setup, you must rebuild the containers when you edit the source code.
+
+```bash
+# Rebuild Backend container (FastAPI) after editing Python code:
+docker compose up -d --build backend
+
+# Rebuild Frontend container (Vue) after editing JS/Vue code:
+docker compose up -d --build frontend
+```
+
 ## 📦 Tech Stack
 
 - **Backend**: FastAPI, SQLAlchemy 2.0, Alembic (Migrations), Pydantic v2, JWT, Bcrypt.

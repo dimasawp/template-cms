@@ -38,3 +38,4 @@ pytest
 pytest-asyncio
 httpx
 faker
+Pillow

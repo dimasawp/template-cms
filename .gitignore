@@ -1,0 +1,19 @@
+# Ignore all contents of storage folder
+storage/*
+!storage/.gitkeep
+
+# Ignore implementation plans
+implementation_plan*
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

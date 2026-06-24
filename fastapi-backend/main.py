@@ -119,6 +119,16 @@ async def request_logging_middleware(request: Request, call_next):
     return response
 
 
+# ── Cache Control Middleware ──────────────────────────────────────────
+
+@app.middleware("http")
+async def cache_control_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/storage/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
 # ── Maintenance Mode Middleware ─────────────────────────────────────
 
 @app.middleware("http")

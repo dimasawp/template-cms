@@ -1,9 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import Dialog from '@/components/ui/Dialog.vue'
 import Button from '@/components/ui/Button.vue'
 import { mediaService } from '@/services/mediaService'
-import { UploadCloud, File, Copy, Trash2, CheckCircle2, Search, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-vue-next'
+import { UploadCloud, File, Copy, Trash2, CheckCircle2, Search, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-vue-next'
 import { notificationService } from '@/services/notificationService'
 import Popover from '@/components/ui/Popover.vue'
 import PopoverHeader from '@/components/ui/PopoverHeader.vue'
@@ -35,17 +35,34 @@ const fileInput = ref(null)
 
 const showUploadSuccess = ref(false)
 const uploadedFileUrl = ref('')
+const previewItem = ref(null)
 
-const fetchMedia = async () => {
-  loading.value = true
+const skip = ref(0)
+const limit = 24
+const hasMore = computed(() => mediaItems.value.length < total.value)
+
+const fetchMedia = async (append = false) => {
+  if (!append) {
+    loading.value = true
+    skip.value = 0
+  } else {
+    if (loading.value) return
+    loading.value = true
+  }
+
   try {
     const { data: res } = await mediaService.getAll({ 
-      skip: 0, limit: 100, search: search.value,
+      skip: skip.value, limit: limit, search: search.value,
       file_type: filterType.value,
       sort_by: sortBy.value,
       sort_order: sortOrder.value
     })
-    mediaItems.value = res.data.items
+    
+    if (append) {
+      mediaItems.value = [...mediaItems.value, ...res.data.items]
+    } else {
+      mediaItems.value = res.data.items
+    }
     total.value = res.data.total
   } catch (error) {
     console.error('Failed to fetch media', error)
@@ -54,9 +71,37 @@ const fetchMedia = async () => {
   }
 }
 
+const loadMore = () => {
+  if (hasMore.value && !loading.value) {
+    skip.value += limit
+    fetchMedia(true)
+  }
+}
+
+const observerTarget = ref(null)
+let observer = null
+
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && hasMore.value && !loading.value) {
+      loadMore()
+    }
+  }, { root: null, rootMargin: '100px', threshold: 0.1 })
+})
+
+watch(observerTarget, (el) => {
+  if (el && observer) {
+    observer.observe(el)
+  }
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+})
+
 watch(() => props.open, (newVal) => {
   if (newVal) {
-    fetchMedia()
+    fetchMedia(false)
   }
 })
 
@@ -64,7 +109,7 @@ let searchTimeout = null
 const onSearch = () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    fetchMedia()
+    fetchMedia(false)
   }, 500)
 }
 
@@ -79,7 +124,7 @@ const handleFileUpload = async (e) => {
   uploading.value = true
   try {
     const res = await mediaService.upload(file)
-    await fetchMedia()
+    await fetchMedia(false)
     e.target.value = '' // Reset input
     
     // Show success popup
@@ -121,7 +166,7 @@ const deleteItem = async (item) => {
   if (!ok) return
   try {
     await mediaService.delete(item.id)
-    await fetchMedia()
+    await fetchMedia(false)
   } catch (error) {
     console.error('Delete failed', error)
   }
@@ -196,7 +241,7 @@ const copyUploadedUrl = async () => {
                     <button 
                       v-for="t in [{id:'', label:'ALL'}, {id:'image', label:'IMAGES'}, {id:'document', label:'DOCUMENTS'}]" 
                       :key="t.id"
-                      @click="filterType = t.id; fetchMedia()"
+                      @click="filterType = t.id; fetchMedia(false)"
                       class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
                       :class="[
                         filterType === t.id
@@ -236,7 +281,7 @@ const copyUploadedUrl = async () => {
                     <button 
                       v-for="f in [{id:'created_at', label:'Date'}, {id:'name', label:'Name'}, {id:'size', label:'Size'}]" 
                       :key="f.id"
-                      @click="sortBy = f.id; fetchMedia()"
+                      @click="sortBy = f.id; fetchMedia(false)"
                       class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-between"
                       :class="sortBy === f.id ? 'bg-accent text-primary shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
                     >
@@ -250,7 +295,7 @@ const copyUploadedUrl = async () => {
                   <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Direction</Label>
                   <div class="grid grid-cols-2 gap-2">
                     <button 
-                      @click="sortOrder = 'asc'; fetchMedia()"
+                      @click="sortOrder = 'asc'; fetchMedia(false)"
                       class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all"
                       :class="sortOrder === 'asc' ? 'bg-primary text-white border-primary shadow-md' : 'bg-background text-muted-foreground border-border hover:bg-muted'"
                     >
@@ -258,7 +303,7 @@ const copyUploadedUrl = async () => {
                       ASC
                     </button>
                     <button 
-                      @click="sortOrder = 'desc'; fetchMedia()"
+                      @click="sortOrder = 'desc'; fetchMedia(false)"
                       class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all"
                       :class="sortOrder === 'desc' ? 'bg-primary text-white border-primary shadow-md' : 'bg-background text-muted-foreground border-border hover:bg-muted'"
                     >
@@ -321,30 +366,73 @@ const copyUploadedUrl = async () => {
             <div class="text-muted-foreground mt-1">{{ formatSize(item.size) }}</div>
           </div>
 
-          <!-- Actions Overlay (only in manage mode) -->
-          <div v-if="mode === 'manage'" class="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <!-- Actions Overlay (available in all modes) -->
+          <div class="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button 
-              @click.stop="copyUrl(item)" 
+              @click.stop="previewItem = item" 
               class="p-1.5 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-primary transition-colors"
-              title="Copy URL"
+              title="Preview"
             >
-              <CheckCircle2 v-if="copiedId === item.id" class="h-3.5 w-3.5 text-green-500" />
-              <Copy v-else class="h-3.5 w-3.5" />
+              <Eye class="h-3.5 w-3.5" />
             </button>
-            <button 
-              @click.stop="deleteItem(item)" 
-              class="p-1.5 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-destructive transition-colors"
-              title="Delete"
-            >
-              <Trash2 class="h-3.5 w-3.5" />
-            </button>
+            
+            <template v-if="mode === 'manage'">
+              <button 
+                @click.stop="copyUrl(item)" 
+                class="p-1.5 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-primary transition-colors"
+                title="Copy URL"
+              >
+                <CheckCircle2 v-if="copiedId === item.id" class="h-3.5 w-3.5 text-green-500" />
+                <Copy v-else class="h-3.5 w-3.5" />
+              </button>
+              <button 
+                @click.stop="deleteItem(item)" 
+                class="p-1.5 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-destructive transition-colors"
+                title="Delete"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </template>
           </div>
+        </div>
+        
+        <!-- Observer Target for Infinite Scroll -->
+        <div ref="observerTarget" class="col-span-full h-10 flex items-center justify-center">
+          <div v-if="loading && mediaItems.length > 0" class="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
         </div>
       </div>
 
     </div>
     
     <template #overlay>
+      <!-- Preview Overlay -->
+      <div v-if="previewItem" class="absolute inset-0 z-[60] bg-background/95 rounded-xl flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex flex-col">
+            <h3 class="font-semibold truncate pr-4 text-foreground">{{ previewItem.original_name }}</h3>
+            <span class="text-xs text-muted-foreground">{{ formatSize(previewItem.size) }}</span>
+          </div>
+          <Button variant="outline" size="sm" @click="previewItem = null">Close Preview</Button>
+        </div>
+        <div class="flex-1 overflow-auto flex items-center justify-center p-4 bg-muted/30">
+          <img 
+            v-if="previewItem.mime_type?.startsWith('image/')" 
+            :src="getFullUrl(previewItem.path)" 
+            class="max-w-full max-h-full object-contain shadow-sm border rounded-lg bg-white"
+          >
+          <iframe 
+            v-else-if="previewItem.mime_type === 'application/pdf'" 
+            :src="getFullUrl(previewItem.path)" 
+            class="w-full h-full border rounded-lg bg-white"
+          ></iframe>
+          <div v-else class="text-center">
+            <File class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p class="text-muted-foreground mb-4">Preview not available for this file type.</p>
+            <Button @click="copyUrl(previewItem)">Copy Link to Download</Button>
+          </div>
+        </div>
+      </div>
+
       <!-- Upload Success Overlay -->
       <div v-if="showUploadSuccess" class="absolute inset-0 z-[60] bg-background/80 rounded-xl flex items-center justify-center p-4">
         <div class="bg-card border shadow-xl rounded-xl p-6 max-w-md w-full text-center space-y-4">

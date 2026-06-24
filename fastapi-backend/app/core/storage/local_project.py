@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import UploadFile, HTTPException
+from PIL import Image
 
 from app.core.config import settings
 from app.core.storage.base import BaseStorageProvider
@@ -21,20 +22,48 @@ class LocalProjectProvider(BaseStorageProvider):
             raise HTTPException(status_code=400, detail=f"Extension '{ext}' not allowed")
 
         from app.helpers.date_helper import get_now_wib
-        filename = custom_name or f"{uuid.uuid4().hex}_{int(get_now_wib().timestamp())}.{ext}"
+        now = get_now_wib()
+        year_month = now.strftime("%Y/%m")
         
-        target_dir = os.path.join(self.base_dir, sub_dir) if sub_dir else self.base_dir
+        filename = custom_name or f"{uuid.uuid4().hex}_{int(now.timestamp())}.{ext}"
+        
+        final_sub_dir = os.path.join(sub_dir, year_month) if sub_dir else year_month
+        target_dir = os.path.join(self.base_dir, final_sub_dir)
         os.makedirs(target_dir, exist_ok=True)
         
         dest_path = os.path.join(target_dir, filename)
+        mime_type = file.content_type
         
-        # Read file size
-        file.file.seek(0, os.SEEK_END)
-        size = file.file.tell()
-        file.file.seek(0)
+        if mime_type and mime_type.startswith("image/") and ext in ["jpg", "jpeg", "png", "bmp"]:
+            try:
+                img = Image.open(file.file)
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGBA")
+                else:
+                    img = img.convert("RGB")
+                    
+                new_filename = filename.rsplit(".", 1)[0] + ".webp"
+                dest_path = os.path.join(target_dir, new_filename)
+                
+                # Auto-resize to max 1920x1920 (maintains aspect ratio)
+                max_size = (1920, 1920)
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                img.save(dest_path, "WEBP", quality=80)
+                
+                size = os.path.getsize(dest_path)
+                filename = new_filename
+                mime_type = "image/webp"
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
+        else:
+            # Read file size
+            file.file.seek(0, os.SEEK_END)
+            size = file.file.tell()
+            file.file.seek(0)
 
-        with open(dest_path, "wb") as buf:
-            shutil.copyfileobj(file.file, buf)
+            with open(dest_path, "wb") as buf:
+                shutil.copyfileobj(file.file, buf)
 
         # Return metadata for database
         relative_path = os.path.relpath(dest_path, os.getcwd()).replace("\\", "/")
@@ -43,7 +72,7 @@ class LocalProjectProvider(BaseStorageProvider):
             "original_name": file.filename,
             "path": relative_path,
             "size": size,
-            "mime_type": file.content_type,
+            "mime_type": mime_type,
             "storage_mode": "local_project"
         }
 
