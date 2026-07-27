@@ -25,9 +25,16 @@ def _discover_routers() -> List[APIRouter]:
     routers: List[APIRouter] = []
     modules_dir = Path(__file__).parent
 
+    from app.core.extensions import ENABLED_EXTENSIONS
+    CORE_MODULES = ["auth", "users", "roles", "settings", "audit", "dashboard", "media", "menus", "notifications"]
+
     for module_dir in sorted(modules_dir.iterdir()):
         # Skip __pycache__, _base, files, etc.
         if not module_dir.is_dir() or module_dir.name.startswith(("_", ".")):
+            continue
+
+        if module_dir.name not in CORE_MODULES and module_dir.name not in ENABLED_EXTENSIONS:
+            print(f"[MODULES] Skipping disabled module: {module_dir.name}")
             continue
 
         controllers_dir = module_dir / "controllers"

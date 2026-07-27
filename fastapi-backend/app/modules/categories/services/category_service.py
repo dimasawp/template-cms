@@ -92,8 +92,11 @@ class CategoryService(BaseService):
 
     @classmethod
     def create(cls, db: Session, data, actor_id: int = None, request: Request = None) -> Category:
-        if CategoryRepository.get_by_slug(db, data.slug):
-            raise ConflictException("Slug already exists")
+        original_slug = data.slug
+        counter = 1
+        while CategoryRepository.get_by_slug(db, data.slug):
+            data.slug = f"{original_slug}-{counter}"
+            counter += 1
 
         if data.parent_id:
             parent = CategoryRepository.get_by_id(db, data.parent_id)
@@ -144,8 +147,11 @@ class CategoryService(BaseService):
         update_data = data.model_dump(exclude_unset=True)
 
         if "slug" in update_data and update_data["slug"] != category.slug:
-            if CategoryRepository.get_by_slug(db, update_data["slug"]):
-                raise ConflictException("Slug already exists")
+            original_slug = update_data["slug"]
+            counter = 1
+            while CategoryRepository.get_by_slug(db, update_data["slug"]):
+                update_data["slug"] = f"{original_slug}-{counter}"
+                counter += 1
 
         if "parent_id" in update_data and update_data["parent_id"] is not None:
             if update_data["parent_id"] == cat_id:

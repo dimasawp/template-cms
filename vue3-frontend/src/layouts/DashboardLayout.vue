@@ -18,6 +18,7 @@ import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import Breadcrumbs from '@/components/common/Breadcrumbs.vue'
 import MediaManagerModal from '@/components/common/MediaManagerModal.vue'
 import { FolderOpen } from 'lucide-vue-next'
+import { extensionModules } from '@/config/modules'
 
 const router = useRouter()
 const route = useRoute()
@@ -53,9 +54,8 @@ const menuGroups = computed(() => [
   {
     name: 'Web Content',
     items: [
-      { name: 'Posts', icon: FileText, route: '/posts', permission: 'posts.view' },
-      ...dynamicMenuLinks.value,
-      { name: 'Categories', icon: FolderTree, route: '/categories', permission: 'categories.view' }
+      ...extensionModules.filter(m => m.group === 'Web Content'),
+      ...dynamicMenuLinks.value
     ]
   },
   {

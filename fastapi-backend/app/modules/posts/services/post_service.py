@@ -73,8 +73,11 @@ class PostService(BaseService):
 
     @classmethod
     def create(cls, db: Session, data, actor_id: int = None, request: Request = None) -> Post:
-        if PostRepository.get_by_slug(db, data.slug):
-            raise ConflictException("Slug already exists")
+        original_slug = data.slug
+        counter = 1
+        while PostRepository.get_by_slug(db, data.slug):
+            data.slug = f"{original_slug}-{counter}"
+            counter += 1
 
         if data.category_id:
             cat = CategoryRepository.get_by_id(db, data.category_id)
@@ -114,8 +117,11 @@ class PostService(BaseService):
         update_data = data.model_dump(exclude_unset=True)
 
         if "slug" in update_data and update_data["slug"] != post.slug:
-            if PostRepository.get_by_slug(db, update_data["slug"]):
-                raise ConflictException("Slug already exists")
+            original_slug = update_data["slug"]
+            counter = 1
+            while PostRepository.get_by_slug(db, update_data["slug"]):
+                update_data["slug"] = f"{original_slug}-{counter}"
+                counter += 1
 
         if "category_id" in update_data and update_data["category_id"] is not None:
             cat = CategoryRepository.get_by_id(db, update_data["category_id"])

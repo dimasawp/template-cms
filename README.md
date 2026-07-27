@@ -11,6 +11,22 @@ template-cms/
 └── vue3-frontend/         # SPA Dashboard (Pinia, Tailwind, Premium UI)
 ```
 
+
+## 🧩 Modular Architecture (Core + Extensions)
+
+This CMS is designed using Domain-Driven Design (DDD) to be highly modular. Features can be easily uninstalled if a specific project doesn't need them.
+
+- **Core Modules** (Cannot be disabled): `auth`, `users`, `roles`, `settings`, `audit`.
+- **Extension Modules**: `posts`, `categories`, `public`.
+
+### How to Disable/Uninstall an Extension:
+1. **Backend:** Open `fastapi-backend/app/core/extensions.py` and comment out the module name from the `ENABLED_EXTENSIONS` list.
+2. **Frontend:** Open `vue3-frontend/src/config/modules.js` and comment out or remove the module block from the `extensionModules` list. This will hide it from the Sidebar.
+3. **Apply Changes:** Jika Anda menjalankan aplikasi menggunakan Docker, Anda wajib melakukan *rebuild* agar perubahan file konfigurasi terbaca oleh sistem:
+   ```bash
+   docker compose up -d --build backend frontend
+   ```
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -79,6 +95,7 @@ docker compose up -d --build backend
 # Rebuild Frontend container (Vue) after editing JS/Vue code:
 docker compose up -d --build frontend
 
+# Rebuild Public Frontend container (Vue) after editing JS/Vue code:
 docker compose up -d --build public_frontend
 ```
 

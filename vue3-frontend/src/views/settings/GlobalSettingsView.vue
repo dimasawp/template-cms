@@ -23,6 +23,7 @@ import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
+import { extensionModules } from '@/config/modules'
 
 const { toast } = useToast()
 const confirm = useConfirmation()
@@ -30,6 +31,10 @@ const auth = useAuthStore()
 
 const isSuperAdmin = computed(() => {
   return auth.userRole?.toLowerCase().includes('admin') || auth.userRole?.toLowerCase().includes('super')
+})
+
+const isCategoriesEnabled = computed(() => {
+  return extensionModules.some(m => m.name.toLowerCase() === 'categories')
 })
 
 const canEdit = auth.hasPermission('settings.update')
@@ -351,7 +356,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Input: Category Max Level -->
-                    <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
+                    <div v-if="isCategoriesEnabled" class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
                       <div class="flex-1 pr-4">
                         <Label class="text-sm font-bold">Category Max Level</Label>
                         <p class="text-[11px] text-muted-foreground mt-0.5">Maximum depth of nested categories. Default: 3</p>
