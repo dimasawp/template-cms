@@ -6,17 +6,18 @@ REST API backend yang tangguh dan modular, dibangun dengan **FastAPI**, **SQLAlc
 
 ```
 fastapi-backend/
-├── alembic/                         # Database Migration History
 ├── app/
 │   ├── core/                        # Konfigurasi, Database, Security, WebSocket
 │   ├── modules/                     # Feature Modules (Auto-registered)
 │   ├── helpers/                     # Response formats, Date helpers (WIB)
-│   ├── seeds/                       # Master data seeder
 │   └── exceptions/                  # Global error handling
+├── db/                              # Database tools
+│   ├── migrations/                  # Alembic migration history
+│   ├── seeds/                       # Master data seeder
+│   └── scripts/                     # One-off migration scripts
 ├── storage/                         # Local file storage (uploads)
 ├── tests/                           # Integration tests (Pytest)
-├── main.py                          # Entry point
-└── alembic.ini                      # Alembic configuration
+└── main.py                          # Entry point
 ```
 
 ## 🚀 Persiapan Awal
@@ -36,10 +37,10 @@ Edit `.env` dan sesuaikan kredensial database Anda.
 **Penting:** Selalu gunakan Alembic untuk sinkronisasi tabel.
 ```bash
 # Membuat tabel awal & master data
-python -m app.seeds.seed
+python -m db.seeds.seed
 
-# Menjalankan migrasi terbaru
-alembic upgrade head
+# Menjalankan migrasi terbaru (dari folder db/)
+cd db && alembic upgrade head
 ```
 
 ### 4. Jalankan Server
@@ -60,12 +61,12 @@ Setiap kali Anda mengubah model di `app/modules/.../models/`, ikuti langkah ini:
 
 1.  **Generate Migration**:
     ```bash
-    alembic revision --autogenerate -m "deskripsi_perubahan"
+    cd db && alembic revision --autogenerate -m "deskripsi_perubahan"
     ```
-2.  **Review**: Cek file baru di `alembic/versions/`.
+2.  **Review**: Cek file baru di `db/migrations/versions/`.
 3.  **Apply**:
     ```bash
-    alembic upgrade head
+    cd db && alembic upgrade head
     ```
 
 ## 🔐 Keamanan & RBAC

@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /app/db
 
 # Install system dependencies required for mysqlclient and weasyprint
 RUN apt-get update && apt-get install -y \
@@ -15,14 +15,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy application files
-COPY . .
+COPY . /app/
 
 # Expose backend port
 EXPOSE 8000
 
 # Start server (run migrations, then uvicorn)
-CMD ["sh", "-c", "alembic upgrade head || echo 'Migrations failed or not configured' && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head || echo 'Migrations failed or not configured'; cd /app && uvicorn main:app --host 0.0.0.0 --port 8000"]

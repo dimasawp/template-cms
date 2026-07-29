@@ -8,7 +8,7 @@ from sqlalchemy import pool
 from alembic import context
 
 # --- CUSTOM: Add project root to sys.path ---
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from app.core.config import settings
 from app.core.database import Base

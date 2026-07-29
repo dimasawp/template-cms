@@ -7,7 +7,7 @@ A professional, high-performance CMS boilerplate built with **FastAPI** (Python)
 ```
 template-cms/
 ├── fastapi-backend/       # REST API (RBAC, Audit, Alembic, Storage)
-│   └── alembic/           # Database migration history
+│   └── db/                # Database tools (migrations, seeds, scripts)
 └── vue3-frontend/         # SPA Dashboard (Pinia, Tailwind, Premium UI)
 ```
 
@@ -41,8 +41,9 @@ cp .env.example .env        # Edit database credentials
 pip install -r requirements.txt
 
 # Database Setup
-python -m app.seeds.seed    # Initial tables & master data
-alembic upgrade head        # Apply latest migrations
+python -m db.seeds.seed      # Initial tables & master data
+cd fastapi-backend/db && alembic upgrade head  # Apply latest migrations
+cd ..
 
 # Run Server
 uvicorn main:app --reload   # API runs at http://localhost:8000
@@ -76,10 +77,10 @@ If you want to completely empty the database and re-seed it with default data (e
 
 ```bash
 # 1. Drop and Recreate the database inside the MySQL container
-docker compose exec db mysql -u root -proot -e "DROP DATABASE IF EXISTS db_cms_template; CREATE DATABASE db_cms_template"
+docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME"'
 
 # 2. Re-create all tables and insert default seed data (Super Admin & Settings)
-docker compose exec backend python -m app.seeds.seed
+docker compose exec backend python -m db.seeds.seed
 
 # 3. Tell Alembic that the database is already up to date
 docker compose exec backend alembic stamp head

@@ -2,6 +2,9 @@
 storage/*
 !storage/.gitkeep
 
+# Ignore Docker Compose env (real credentials)
+.env
+
 # Ignore implementation plans
 implementation_plan*
 
