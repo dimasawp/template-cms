@@ -7,13 +7,17 @@ import { useTheme } from '@/composables/useTheme'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
+import CaptchaInput from '@/components/CaptchaInput.vue'
 import { UserPlus, Sun, Moon, ArrowLeft } from 'lucide-vue-next'
+import { useSettingsStore } from '@/stores/settings'
 
 const router = useRouter()
 const { toast } = useToast()
 const { isDark, toggleTheme } = useTheme()
+const settingsStore = useSettingsStore()
 
 const isLoading = ref(false)
+const captchaRef = ref(null)
 const form = ref({
   username: '',
   email: '',
@@ -29,12 +33,17 @@ async function handleRegister() {
 
   isLoading.value = true
   try {
-    await authService.register({
+    const payload = {
       username: form.value.username,
       email: form.value.email,
       full_name: form.value.full_name,
       password: form.value.password,
-    })
+    }
+    if (settingsStore.captchaEnabled && captchaRef.value) {
+      payload.captcha_token = captchaRef.value.token
+      payload.captcha_answer = captchaRef.value.answer
+    }
+    await authService.register(payload)
     
     toast({ title: 'Success', description: 'Registration successful! Please login.', variant: 'success' })
     router.push('/login')
@@ -99,6 +108,8 @@ async function handleRegister() {
             <Input id="confirm" v-model="form.confirm_password" type="password" placeholder="••••••" required />
           </div>
         </div>
+
+        <CaptchaInput v-if="settingsStore.captchaEnabled" ref="captchaRef" />
 
         <div class="pt-2">
           <Button class="w-full h-11" :loading="isLoading" type="submit">

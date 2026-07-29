@@ -121,6 +121,7 @@ def seed_settings(db: Session):
         {"setting_key": "app_name", "setting_value": "CMS Template", "description": "Application Name"},
         {"setting_key": "maintenance_mode", "setting_value": "false", "description": "Maintenance Mode Toggle"},
         {"setting_key": "registration_enabled", "setting_value": "true", "description": "Allow user self-registration"},
+        {"setting_key": "captcha_enabled", "setting_value": "false", "description": "CAPTCHA verification on login/register"},
     ]
     for data in settings_data:
         if not db.query(Setting).filter_by(setting_key=data["setting_key"]).first():
@@ -146,6 +147,7 @@ def run():
     import app.modules.users.models.password_reset_model      # noqa: F401
     import app.modules.categories.models.category_model       # noqa: F401
     import app.modules.posts.models.post_model                # noqa: F401
+    import app.modules.captcha.models.captcha_model          # noqa: F401
 
     print(f"\n{'='*50}")
     print(f"  DATABASE SEEDER  (ENV={settings.ENV})")

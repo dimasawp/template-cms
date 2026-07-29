@@ -6,6 +6,7 @@ import { useTheme } from '@/composables/useTheme'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
+import CaptchaInput from '@/components/CaptchaInput.vue'
 import { LogIn, Sun, Moon, ShieldAlert } from 'lucide-vue-next'
 
 import { useSettingsStore } from '@/stores/settings'
@@ -17,9 +18,15 @@ const { isDark, toggleTheme } = useTheme()
 
 const username = ref('')
 const password = ref('')
+const captchaRef = ref(null)
 
 async function handleLogin() {
-  const ok = await auth.login({ username: username.value, password: password.value })
+  const payload = { username: username.value, password: password.value }
+  if (settingsStore.captchaEnabled && captchaRef.value) {
+    payload.captcha_token = captchaRef.value.token
+    payload.captcha_answer = captchaRef.value.answer
+  }
+  const ok = await auth.login(payload)
   if (ok) router.push('/dashboard')
 }
 </script>
@@ -59,6 +66,8 @@ async function handleLogin() {
           <Label for="password">Password</Label>
           <Input id="password" v-model="password" type="password" placeholder="••••••" class="mt-1" />
         </div>
+
+        <CaptchaInput v-if="settingsStore.captchaEnabled" ref="captchaRef" />
 
         <p v-if="auth.error" class="text-sm text-destructive">{{ auth.error }}</p>
 

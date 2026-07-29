@@ -11,6 +11,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const isLoading = ref(false)
   const isInitialized = ref(false)
   const categoryMaxLevel = ref(3)
+  const captchaEnabled = ref(false)
 
   async function fetchSettings() {
     isLoading.value = true
@@ -24,6 +25,7 @@ export const useSettingsStore = defineStore('settings', () => {
       if (settings.enable_websockets !== undefined) enableWebsockets.value = settings.enable_websockets
       if (settings.app_version) appVersion.value = settings.app_version
       if (settings.category_max_level) categoryMaxLevel.value = parseInt(settings.category_max_level)
+      if (settings.captcha_enabled) captchaEnabled.value = settings.captcha_enabled === 'true'
     } catch (error) {
       console.error('Failed to fetch settings:', error)
     } finally {
@@ -41,6 +43,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoading,
     isInitialized,
     categoryMaxLevel,
+    captchaEnabled,
     fetchSettings
   }
 })

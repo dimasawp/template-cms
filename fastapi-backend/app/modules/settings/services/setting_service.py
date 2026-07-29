@@ -110,6 +110,7 @@ class SettingService:
             {"key": "enable_user_avatars", "value": "true", "group": "system", "desc": "Izinkan upload foto profil"},
             {"key": "allow_username_change", "value": "true", "group": "system", "desc": "Izinkan ganti username mandiri"},
             {"key": "registration_enabled", "value": "true", "group": "system", "desc": "Izinkan pendaftaran mandiri"},
+            {"key": "captcha_enabled", "value": "false", "group": "system", "desc": "Aktifkan CAPTCHA pada login/register"},
             {"key": "category_max_level", "value": "3", "group": "system", "desc": "Maksimal Level Kategori (Nesting)"}
         ]
 

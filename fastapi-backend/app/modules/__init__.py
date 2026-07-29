@@ -26,7 +26,7 @@ def _discover_routers() -> List[APIRouter]:
     modules_dir = Path(__file__).parent
 
     from app.core.extensions import ENABLED_EXTENSIONS
-    CORE_MODULES = ["auth", "users", "roles", "settings", "audit", "dashboard", "media", "menus", "notifications"]
+    CORE_MODULES = ["auth", "users", "roles", "settings", "audit", "dashboard", "media", "menus", "notifications", "captcha"]
 
     for module_dir in sorted(modules_dir.iterdir()):
         # Skip __pycache__, _base, files, etc.

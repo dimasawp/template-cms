@@ -5,12 +5,16 @@ from typing import Optional, List
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=2, max_length=100)
     password: str = Field(..., min_length=6)
+    captcha_token: Optional[str] = None
+    captcha_answer: Optional[str] = None
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=2, max_length=100)
     email: str = Field(..., max_length=255)
     full_name: str = Field(..., min_length=2, max_length=255)
     password: str = Field(..., min_length=6)
+    captcha_token: Optional[str] = None
+    captcha_answer: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str

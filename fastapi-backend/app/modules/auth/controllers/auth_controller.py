@@ -26,6 +26,16 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 @handle_errors
 async def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     """Self-registration for new users."""
+    from app.modules.settings.models.setting_model import Setting
+    from app.modules.captcha.services.captcha_service import verify_captcha
+
+    captcha_enabled = db.query(Setting).filter(Setting.setting_key == "captcha_enabled").first()
+    if captcha_enabled and captcha_enabled.setting_value == "true":
+        if not payload.captcha_token or not payload.captcha_answer:
+            raise HTTPException(status_code=400, detail="CAPTCHA verification required")
+        if not verify_captcha(db, payload.captcha_token, payload.captcha_answer):
+            raise HTTPException(status_code=400, detail="CAPTCHA verification failed")
+
     user = AuthService.register_user(
         db, payload.username, payload.email, payload.full_name, payload.password
     )
@@ -38,10 +48,19 @@ async def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 @handle_errors
 async def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Authenticate and return JWT tokens (for frontend / API clients)."""
+    from app.modules.settings.models.setting_model import Setting
+    from app.modules.captcha.services.captcha_service import verify_captcha
+
+    captcha_enabled = db.query(Setting).filter(Setting.setting_key == "captcha_enabled").first()
+    if captcha_enabled and captcha_enabled.setting_value == "true":
+        if not payload.captcha_token or not payload.captcha_answer:
+            raise HTTPException(status_code=400, detail="CAPTCHA verification required")
+        if not verify_captcha(db, payload.captcha_token, payload.captcha_answer):
+            raise HTTPException(status_code=400, detail="CAPTCHA verification failed")
+
     user = AuthService.authenticate_user(db, payload.username, payload.password)
     
     # Check for maintenance mode. Only super_admins can login during maintenance.
-    from app.modules.settings.models.setting_model import Setting
     from datetime import datetime
     
     s_rows = db.query(Setting).filter(Setting.setting_key.in_(["maintenance_mode", "maintenance_scheduled_at"])).all()

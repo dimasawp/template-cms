@@ -54,6 +54,7 @@ const form = ref({
   maintenance_mode: 'false',
   maintenance_scheduled_at: null,
   registration_enabled: 'true',
+  captcha_enabled: 'false',
   category_max_level: '3'
 })
 
@@ -118,6 +119,7 @@ async function handleSave() {
       { setting_key: 'enable_user_avatars', setting_value: form.value.enable_user_avatars === 'true' ? 'true' : 'false' },
       { setting_key: 'allow_username_change', setting_value: form.value.allow_username_change === 'true' ? 'true' : 'false' },
       { setting_key: 'registration_enabled', setting_value: form.value.registration_enabled === 'true' ? 'true' : 'false' },
+      { setting_key: 'captcha_enabled', setting_value: form.value.captcha_enabled === 'true' ? 'true' : 'false' },
       { setting_key: 'category_max_level', setting_value: form.value.category_max_level.toString() }
     ]
     await settingService.bulkUpdate(payload)
@@ -311,6 +313,26 @@ onMounted(() => {
                         <span 
                           class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                           :class="form.registration_enabled === 'true' ? 'translate-x-5' : 'translate-x-0'"
+                        ></span>
+                      </button>
+                    </div>
+
+                    <!-- Toggle: CAPTCHA -->
+                    <div class="flex items-center justify-between p-3 hover:bg-muted/50 rounded-xl transition-colors border-t border-dashed">
+                      <div class="flex-1 pr-4">
+                        <Label class="text-sm font-bold">CAPTCHA Protection</Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">Require CAPTCHA verification on login and register pages.</p>
+                      </div>
+                      <button 
+                        type="button"
+                        @click="form.captcha_enabled = form.captcha_enabled === 'true' ? 'false' : 'true'"
+                        :disabled="!canEdit"
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+                        :class="form.captcha_enabled === 'true' ? 'bg-primary' : 'bg-slate-400 dark:bg-slate-700'"
+                      >
+                        <span 
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          :class="form.captcha_enabled === 'true' ? 'translate-x-5' : 'translate-x-0'"
                         ></span>
                       </button>
                     </div>
