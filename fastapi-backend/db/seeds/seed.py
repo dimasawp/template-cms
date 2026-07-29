@@ -44,6 +44,10 @@ def seed_permissions(db: Session):
         {"id": 20, "name": "posts.create",    "description": "Create posts"},
         {"id": 21, "name": "posts.update",    "description": "Update posts"},
         {"id": 22, "name": "posts.delete",    "description": "Delete posts"},
+        {"id": 23, "name": "media.view",      "description": "View media files"},
+        {"id": 24, "name": "media.create",    "description": "Upload media files"},
+        {"id": 25, "name": "media.update",    "description": "Update media files"},
+        {"id": 26, "name": "media.delete",    "description": "Delete media files"},
     ]
     for data in permissions:
         if not db.query(Permission).filter_by(name=data["name"]).first():

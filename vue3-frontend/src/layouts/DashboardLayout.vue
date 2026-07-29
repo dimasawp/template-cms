@@ -235,7 +235,7 @@ onMounted(async () => {
         </button>
 
         <!-- Media Manager toggle on the left -->
-        <button 
+        <button v-if="auth.hasPermission('media.view')"
           @click="isMediaManagerOpen = true" 
           class="ml-2 lg:ml-0 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 dark:bg-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/30 transition-all font-semibold text-sm border border-indigo-500/20"
           title="Manage Uploaded Files & Media"
