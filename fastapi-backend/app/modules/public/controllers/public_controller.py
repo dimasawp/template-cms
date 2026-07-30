@@ -15,6 +15,21 @@ from app.modules.settings.models.setting_model import Setting
 
 router = APIRouter(prefix="/api/v1/public", tags=["Public API"])
 
+def _serialize_post(p):
+    return {
+        "id": p.id,
+        "title": p.title,
+        "slug": p.slug,
+        "thumbnail": p.thumbnail,
+        "content": p.content,
+        "created_at": p.created_at,
+        "category": p.category_id,
+        "author": {
+            "username": p.author.username,
+            "full_name": p.author.full_name
+        } if p.author else None
+    }
+
 @router.get("/posts")
 @limiter.limit("100/minute")
 @handle_errors
@@ -23,6 +38,7 @@ async def get_public_posts(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
     category_slug: Optional[str] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get published posts for frontend display."""
@@ -33,27 +49,19 @@ async def get_public_posts(
         if not cat:
             return success_response(data={"items": [], "pagination": {"total": 0, "page": page, "per_page": per_page, "total_pages": 0}})
         query = query.filter(Post.category_id == cat.id)
+
+    if search:
+        query = query.filter(
+            Post.title.ilike(f"%{search}%")
+            | Post.content.ilike(f"%{search}%")
+        )
         
     total = query.count()
     items = query.options(joinedload(Post.author)).order_by(desc(Post.created_at)).offset((page - 1) * per_page).limit(per_page).all()
     
     return success_response(
         data={
-            "items": [
-                {
-                    "id": p.id,
-                    "title": p.title,
-                    "slug": p.slug,
-                    "thumbnail": p.thumbnail,
-                    "created_at": p.created_at,
-                    "category": p.category_id, # In a real app we'd join and return category slug/name
-                    "author": {
-                        "username": p.author.username,
-                        "full_name": p.author.full_name
-                    } if p.author else None
-                }
-                for p in items
-            ],
+            "items": [_serialize_post(p) for p in items],
             "pagination": {
                 "total": total,
                 "page": page,
@@ -62,6 +70,38 @@ async def get_public_posts(
             }
         }
     )
+
+@router.get("/posts/{slug}/related")
+@limiter.limit("100/minute")
+@handle_errors
+async def get_related_posts(
+    request: Request,
+    slug: str,
+    db: Session = Depends(get_db)
+):
+    """Get related posts (same category, exclude current)."""
+    post = db.query(Post).filter(
+        Post.slug == slug,
+        Post.deleted_at == None
+    ).first()
+
+    if not post:
+        raise NotFoundException("Post not found")
+
+    query = db.query(Post).options(joinedload(Post.author)).filter(
+        Post.status == "PUBLISHED",
+        Post.deleted_at == None,
+        Post.id != post.id
+    )
+
+    if post.category_id:
+        query = query.filter(Post.category_id == post.category_id)
+
+    items = query.order_by(desc(Post.created_at)).limit(6).all()
+
+    return success_response(data={
+        "items": [_serialize_post(p) for p in items]
+    })
 
 @router.get("/posts/{slug}")
 @limiter.limit("100/minute")
@@ -89,6 +129,7 @@ async def get_public_post_detail(
         "content": post.content,
         "additional_contents": post.additional_contents,
         "status": post.status,
+        "category_id": post.category_id,
         "created_at": post.created_at,
         "author": {
             "username": post.author.username,

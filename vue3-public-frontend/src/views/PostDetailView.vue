@@ -1,25 +1,24 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, inject } from 'vue'
+import { useRoute, RouterLink } from 'vue-router'
 import { publicService } from '@/services/api'
+import Badge from '@/components/ui/Badge.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
+import Button from '@/components/ui/Button.vue'
+import PostCard from '@/components/PostCard.vue'
 
 const route = useRoute()
 const post = ref(null)
 const loading = ref(true)
+const relatedPosts = ref([])
+const relatedLoading = ref(false)
 
-const fetchPostDetail = async () => {
-  try {
-    const res = await publicService.getPostDetail(route.params.slug)
-    post.value = res.data.data
-  } catch (error) {
-    console.error('Failed to fetch post detail', error)
-  } finally {
-    loading.value = false
-  }
-}
+const categoriesMap = inject('categoriesMap', {})
 
-onMounted(() => {
-  fetchPostDetail()
+const categoryName = computed(() => {
+  if (!post.value?.category_id) return null
+  const c = categoriesMap[post.value.category_id]
+  return c ? c.name : null
 })
 
 const formattedDate = computed(() => {
@@ -36,189 +35,127 @@ const getImageUrl = (path) => {
   const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'
   return `${cleanBase}${cleanPath}`
 }
+
+const fetchPostDetail = async () => {
+  try {
+    const res = await publicService.getPostDetail(route.params.slug)
+    post.value = res.data.data
+    document.title = post.value.title
+    const metaDesc = document.querySelector('meta[name="description"]')
+    if (metaDesc) {
+      metaDesc.content = post.value.content ? post.value.content.replace(/<[^>]*>/g, '').substring(0, 160) : ''
+    }
+  } catch (error) {
+    console.error('Failed to fetch post detail', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchRelatedPosts = async () => {
+  if (!post.value?.slug) return
+  relatedLoading.value = true
+  try {
+    const res = await publicService.getRelatedPosts(post.value.slug)
+    relatedPosts.value = res.data.data.items
+  } catch (error) {
+    console.error('Failed to fetch related posts', error)
+  } finally {
+    relatedLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await fetchPostDetail()
+  if (post.value) {
+    fetchRelatedPosts()
+  }
+})
 </script>
 
 <template>
-  <div class="container" style="padding-top: 40px; padding-bottom: 80px;">
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-    </div>
-    
-    <div v-else-if="!post" class="empty-state glass">
-      <h2>Post not found</h2>
-      <p>The post you are looking for does not exist or has been removed.</p>
-      <RouterLink to="/" class="btn" style="margin-top: 20px;">Return Home</RouterLink>
+  <div class="mx-auto max-w-6xl px-5 py-10">
+    <div v-if="loading" class="mx-auto max-w-3xl">
+      <div class="mb-6 text-center">
+        <SkeletonLoader class="mx-auto mb-4 h-6 w-24 rounded-full" />
+        <SkeletonLoader class="mx-auto mb-4 h-12 w-3/4" />
+        <SkeletonLoader class="mx-auto h-4 w-1/2" />
+      </div>
+      <SkeletonLoader class="mb-10 aspect-[16/9] w-full rounded-lg" />
+      <div class="space-y-4">
+        <SkeletonLoader v-for="n in 6" :key="n" class="h-5 w-full" />
+      </div>
     </div>
 
-    <article v-else class="post-detail animate-fade-in">
-      <!-- Header -->
-      <header class="post-header" style="margin-bottom: 30px; text-align: center;">
-        <div style="margin-bottom: 15px;">
-          <span v-if="post.category" style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
-            Category ID: {{ post.category }}
-          </span>
+    <div v-else-if="!post" class="mx-auto max-w-lg rounded-lg border border-border bg-background py-20 text-center text-muted-foreground">
+      <h2 class="text-2xl font-bold">Post not found</h2>
+      <p>The post you are looking for does not exist or has been removed.</p>
+      <RouterLink to="/" class="mt-5 inline-block">
+        <Button>Return Home</Button>
+      </RouterLink>
+    </div>
+
+    <article v-else class="mx-auto max-w-3xl">
+      <header class="mb-8 text-center">
+        <div v-if="categoryName" class="mb-4">
+          <Badge variant="primary">{{ categoryName }}</Badge>
         </div>
-        <h1 class="post-title" style="font-size: 2.5rem; margin-bottom: 10px;">{{ post.title }}</h1>
-        <div class="post-meta" style="color: var(--color-text-muted); font-size: 0.95rem;">
+        <h1 class="mb-2 text-[clamp(2rem,4vw,3.5rem)] font-extrabold leading-tight">{{ post.title }}</h1>
+        <div class="text-sm text-muted-foreground">
           <span v-if="post.author">By {{ post.author.full_name || post.author.username }} &bull; </span>
           <span>Published on {{ formattedDate }}</span>
         </div>
       </header>
 
-      <!-- Thumbnail -->
-      <div class="post-hero-image" v-if="post.thumbnail">
-        <img :src="getImageUrl(post.thumbnail)" :alt="post.title" />
+      <div v-if="post.thumbnail" class="mb-10 aspect-[16/9] w-full overflow-hidden rounded-lg shadow-lg">
+        <img :src="getImageUrl(post.thumbnail)" :alt="post.title" class="h-full w-full object-cover" />
       </div>
 
-      <!-- Main Content (Jodit HTML) -->
-      <!-- SECURITY WARNING: v-html is used because we trust the HTML from our CMS. -->
-      <!-- In a fully public system, you might want to sanitize this HTML using DOMPurify. -->
-      <div class="post-content glass" style="padding: 40px; margin-bottom: 40px;" v-html="post.content">
+      <div class="mb-10 rounded-lg border border-border bg-background p-10" v-html="post.content">
       </div>
 
-      <!-- Additional Contents (Iframes, etc) -->
-      <div v-if="post.additional_contents && post.additional_contents.length > 0" class="additional-contents">
-        <h3 style="font-size: 1.5rem; margin-bottom: 20px; font-weight: 700;">Additional Media</h3>
-        
-        <div class="blocks-grid">
-          <div 
-            v-for="(block, index) in post.additional_contents" 
+      <div v-if="post.additional_contents && post.additional_contents.length > 0">
+        <h3 class="mb-5 text-2xl font-bold">Additional Media</h3>
+
+        <div class="flex flex-col gap-8">
+          <div
+            v-for="(block, index) in post.additional_contents"
             :key="index"
-            class="content-block glass"
+            class="rounded-lg border border-border bg-background p-8"
           >
-            <!-- Render Block Title if exists -->
-            <h4 v-if="block.title" class="block-title">{{ block.title }}</h4>
+            <h4 v-if="block.title" class="mb-4 text-lg font-semibold text-primary">{{ block.title }}</h4>
 
-            <!-- Check if the block content contains an iframe. We render it securely. -->
-            <div 
-              v-if="block.url && block.url.includes('<iframe')" 
-              class="iframe-wrapper"
+            <div
+              v-if="block.url && block.url.includes('<iframe')"
               v-html="block.url"
             ></div>
-            
-            <!-- Fallback for other block contents -->
-            <div v-else-if="block.url" class="html-wrapper">
-              <iframe v-if="block.source_type === 'url' || block.type === 'iframe'" :src="block.url" allowfullscreen></iframe>
-              <a v-else :href="block.url" target="_blank" rel="noopener">View Attachment</a>
+
+            <div v-else-if="block.url">
+              <iframe v-if="block.source_type === 'url' || block.type === 'iframe'" :src="block.url" class="aspect-video w-full rounded-lg border border-border" allowfullscreen></iframe>
+              <a v-else :href="block.url" target="_blank" rel="noopener" class="text-primary underline">View Attachment</a>
             </div>
           </div>
         </div>
       </div>
-      
     </article>
+
+    <section v-if="relatedPosts.length > 0" class="mx-auto mt-20 max-w-6xl border-t border-border pt-12">
+      <h3 class="mb-8 text-2xl font-bold">Related Articles</h3>
+      <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <PostCard v-for="rp in relatedPosts" :key="rp.id" :post="rp" />
+      </div>
+    </section>
   </div>
 </template>
 
-<style scoped>
-.post-detail {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.post-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.post-title {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 16px;
-  color: var(--color-text);
-}
-
-.post-meta {
-  color: var(--color-text-muted);
-  font-size: 1rem;
-}
-
-.post-hero-image {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 40px;
-  box-shadow: var(--shadow-lg);
-}
-
-.post-hero-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Post Content overrides */
-:deep(.post-content h2) {
-  font-size: 2rem;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-}
-:deep(.post-content h3) {
-  font-size: 1.5rem;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-}
-:deep(.post-content p) {
-  font-size: 1.125rem;
-  line-height: 1.8;
-  margin-bottom: 1.5rem;
-  color: var(--color-text);
-}
-:deep(.post-content ul), :deep(.post-content ol) {
-  margin-bottom: 1.5rem;
-  padding-left: 2rem;
-  font-size: 1.125rem;
-}
-
-/* Additional Contents */
-.additional-contents {
-  margin-top: 60px;
-}
-
-.blocks-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.content-block {
-  padding: 30px;
-  border-radius: var(--radius);
-}
-
-.block-title {
-  font-size: 1.25rem;
-  margin-bottom: 15px;
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-/* Make iframes responsive */
-:deep(.iframe-wrapper iframe), :deep(.html-wrapper iframe) {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-}
-
-.loading-state, .empty-state {
-  padding: 80px 20px;
-  text-align: center;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+<style>
+.post-content h2 { @apply mb-4 mt-8 text-3xl font-bold; }
+.post-content h3 { @apply mb-4 mt-6 text-2xl font-bold; }
+.post-content p  { @apply mb-6 text-lg leading-relaxed; }
+.post-content ul,
+.post-content ol { @apply mb-6 pl-8 text-lg; }
+.post-content ul  { @apply list-disc; }
+.post-content ol  { @apply list-decimal; }
+.post-content img { @apply my-5 w-full rounded-lg; }
+.post-content iframe { @apply my-5 aspect-video w-full rounded-lg border-none; }
 </style>

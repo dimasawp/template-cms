@@ -14,6 +14,9 @@ export const publicService = {
   getPostDetail(slug) {
     return api.get(`/public/posts/${slug}`)
   },
+  getRelatedPosts(slug) {
+    return api.get(`/public/posts/${slug}/related`)
+  },
   getCategories() {
     return api.get('/public/categories')
   },

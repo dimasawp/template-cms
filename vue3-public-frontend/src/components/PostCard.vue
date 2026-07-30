@@ -1,12 +1,15 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { RouterLink } from 'vue-router'
 
 const props = defineProps({
-  post: {
-    type: Object,
-    required: true
-  }
+  post: { type: Object, required: true }
+})
+
+const categoriesMap = inject('categoriesMap', {})
+const categoryName = computed(() => {
+  const c = categoriesMap[props.post.category]
+  return c ? c.name : null
 })
 
 const formattedDate = computed(() => {
@@ -26,98 +29,25 @@ const getImageUrl = (path) => {
 </script>
 
 <template>
-  <RouterLink :to="{ name: 'post-detail', params: { slug: post.slug } }" class="post-card animate-fade-in glass">
-    <div class="post-thumbnail">
-      <img :src="getImageUrl(post.thumbnail)" :alt="post.title" loading="lazy" />
+  <RouterLink
+    :to="{ name: 'post-detail', params: { slug: post.slug } }"
+    class="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-background transition-all duration-300 hover:-translate-y-2 hover:border-primary hover:shadow-lg"
+  >
+    <div class="aspect-[16/10] w-full overflow-hidden bg-border">
+      <img
+        :src="getImageUrl(post.thumbnail)"
+        :alt="post.title"
+        loading="lazy"
+        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
     </div>
-    <div class="post-content">
-      <div class="post-meta">
-        <span class="post-category" v-if="post.category">Category ID: {{ post.category }}</span>
-        <div class="post-meta-right">
-          <span v-if="post.author" class="post-author">By {{ post.author.full_name || post.author.username }} &bull; </span>
-          <span class="post-date">{{ formattedDate }}</span>
-        </div>
+    <div class="flex flex-1 flex-col p-5">
+      <div class="mb-3 flex items-center justify-between text-sm">
+        <span v-if="categoryName" class="font-semibold uppercase tracking-wider text-primary">{{ categoryName }}</span>
+        <span class="text-muted-foreground">{{ formattedDate }}</span>
       </div>
-      <h3 class="post-title">{{ post.title }}</h3>
+      <h3 class="line-clamp-3 text-lg font-bold">{{ post.title }}</h3>
+      <p v-if="post.content" class="mt-2 line-clamp-2 text-sm text-muted-foreground">{{ post.content.replace(/<[^>]*>/g, '').substring(0, 150) }}</p>
     </div>
   </RouterLink>
 </template>
-
-<style scoped>
-.post-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
-  color: inherit;
-  height: 100%;
-}
-
-.post-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--color-primary);
-}
-
-.post-thumbnail {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  background-color: var(--color-border);
-}
-
-.post-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.6s ease;
-}
-
-.post-card:hover .post-thumbnail img {
-  transform: scale(1.05);
-}
-
-.post-content {
-  padding: 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.post-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 0.85rem;
-}
-
-.post-category {
-  color: var(--color-primary);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.post-date, .post-author {
-  color: var(--color-text-muted);
-}
-
-.post-meta-right {
-  display: flex;
-  gap: 4px;
-}
-
-.post-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.4;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>
