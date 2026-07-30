@@ -53,7 +53,7 @@ export function useRealtime() {
       try {
         const data = JSON.parse(event.data)
         if (data.type === 'MAINTENANCE_UPDATE') {
-          status.value = data.payload
+          status.value = { ...status.value, ...data.payload }
         }
       } catch (err) {
         console.error('[WS] Error parsing message', err)

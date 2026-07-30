@@ -2,7 +2,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { AlertCircle, Clock, ShieldAlert } from 'lucide-vue-next'
 
-const props = defineProps()
+const props = defineProps({
+  scheduledAt: { type: String, default: null },
+})
 
 const timeLeft = ref('')
 const isUrgent = ref(false)

@@ -66,7 +66,6 @@ async function fetchSettings() {
     const { data: res } = await settingService.getRaw()
     const configs = res.data || []
     
-    // map to form
     const st = { ...form.value }
     configs.forEach((item) => {
       if (st[item.setting_key] !== undefined) {
@@ -74,6 +73,18 @@ async function fetchSettings() {
       }
     })
     form.value = st
+
+    // Restore schedule dropdown from stored value
+    if (form.value.maintenance_mode === 'true' && form.value.maintenance_scheduled_at) {
+      const diffMs = new Date(form.value.maintenance_scheduled_at).getTime() - Date.now()
+      const diffMin = Math.max(0, Math.round(diffMs / 60000))
+      const options = [0, 5, 10, 30]
+      selectedSchedule.value = String(
+        options.reduce((prev, curr) =>
+          Math.abs(curr - diffMin) < Math.abs(prev - diffMin) ? curr : prev
+        )
+      )
+    }
     
   } catch (err) {
     toast({ title: 'Error', description: 'Failed to fetch settings', variant: 'destructive' })

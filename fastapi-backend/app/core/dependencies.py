@@ -2,6 +2,7 @@
 FastAPI dependencies for authentication & authorisation.
 """
 
+from datetime import datetime
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -77,10 +78,22 @@ def get_current_user(
                 detail="Session has been revoked or expired"
             )
 
-    # ── Maintenance Mode Check ──
-    m_mode = db.query(Setting).filter(Setting.setting_key == "maintenance_mode").first()
-    if m_mode and m_mode.setting_value == "true":
-        # Check if the user is a super_admin
+    # ── Maintenance Mode Check (with schedule support) ──
+    s_rows = db.query(Setting).filter(
+        Setting.setting_key.in_(["maintenance_mode", "maintenance_scheduled_at"])
+    ).all()
+    s_dict = {s.setting_key: s.setting_value for s in s_rows}
+    should_block = s_dict.get("maintenance_mode") == "true"
+    if should_block and s_dict.get("maintenance_scheduled_at"):
+        try:
+            target_dt = datetime.fromisoformat(
+                s_dict["maintenance_scheduled_at"].replace("Z", "+00:00")
+            )
+            if datetime.now(target_dt.tzinfo) < target_dt:
+                should_block = False
+        except (ValueError, TypeError):
+            pass
+    if should_block:
         role = db.query(Role).filter(Role.id == user.role_id).first()
         if not role or role.name != "super_admin":
             raise HTTPException(
