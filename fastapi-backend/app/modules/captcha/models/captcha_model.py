@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
 from app.core.database import Base
+from app.helpers.date_helper import get_now_wib
 
 
 class CaptchaCode(Base):
@@ -21,7 +22,7 @@ class CaptchaCode(Base):
         return cls(
             token=uuid.uuid4().hex,
             code=code,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes),
+            expires_at=get_now_wib() + timedelta(minutes=ttl_minutes),
             is_used=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=get_now_wib(),
         )

@@ -8,6 +8,7 @@ import Pagination from '@/components/common/Pagination.vue'
 import Button from '@/components/ui/Button.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import { Bell, CheckCheck, RefreshCw, Info, AlertTriangle, AlertCircle } from 'lucide-vue-next'
+import { formatWIB } from '@/helpers/dateHelper'
 
 const { toast } = useToast()
 
@@ -96,7 +97,7 @@ onMounted(fetchItems)
               {{ n.title }}
             </h4>
             <span class="text-[10px] text-muted-foreground whitespace-nowrap">
-              {{ new Date(n.created_at + 'Z').toLocaleString('en-US') }}
+              {{ formatWIB(n.created_at) }}
             </span>
           </div>
           <p class="text-sm mt-1 text-muted-foreground line-clamp-2">{{ n.message }}</p>

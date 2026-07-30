@@ -2,11 +2,11 @@ import os
 import random
 import string
 import math
-from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.modules.captcha.models.captcha_model import CaptchaCode
+from app.helpers.date_helper import get_now_wib
 
 _CHARS = string.digits + string.ascii_uppercase
 # Ambiguous chars removed: 0, O, I, 1
@@ -92,8 +92,8 @@ def verify_captcha(db: Session, token: str, answer: str) -> bool:
     if not captcha:
         return False
 
-    now = datetime.now(timezone.utc)
-    if captcha.expires_at.replace(tzinfo=timezone.utc) < now:
+    now = get_now_wib()
+    if captcha.expires_at < now:
         captcha.is_used = True
         db.commit()
         return False

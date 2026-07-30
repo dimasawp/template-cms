@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { roleService } from '@/services/roleService'
 import PageHeader from '@/components/common/PageHeader.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import { formatWIB } from '@/helpers/dateHelper'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
@@ -333,10 +334,10 @@ function handleFilterStatus(status) {
               <StatusIndicator :active="r.is_active" />
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap">
-              {{ r.created_at ? new Date(r.created_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ r.created_at ? formatWIB(r.created_at) : '—' }}
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap">
-              {{ r.updated_at ? new Date(r.updated_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ r.updated_at ? formatWIB(r.updated_at) : '—' }}
             </td>
             <td v-if="auth.hasPermission('roles.update') || auth.hasPermission('roles.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
               <div class="flex items-center justify-center gap-1">

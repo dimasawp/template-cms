@@ -45,7 +45,7 @@ async def get_public_posts(
                     "title": p.title,
                     "slug": p.slug,
                     "thumbnail": p.thumbnail,
-                    "created_at": p.created_at.isoformat(),
+                    "created_at": p.created_at,
                     "category": p.category_id, # In a real app we'd join and return category slug/name
                     "author": {
                         "username": p.author.username,
@@ -89,7 +89,7 @@ async def get_public_post_detail(
         "content": post.content,
         "additional_contents": post.additional_contents,
         "status": post.status,
-        "created_at": post.created_at.isoformat(),
+        "created_at": post.created_at,
         "author": {
             "username": post.author.username,
             "full_name": post.author.full_name

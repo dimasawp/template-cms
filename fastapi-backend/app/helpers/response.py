@@ -1,6 +1,18 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, List, Dict
 from fastapi.responses import JSONResponse
+
+from app.helpers.date_helper import get_now_wib_aware, fmt_dt, WIB_TZ
+
+
+def _ensure_tz(data: Any) -> Any:
+    if isinstance(data, datetime) and data.tzinfo is None:
+        return data.replace(tzinfo=WIB_TZ)
+    if isinstance(data, dict):
+        return {k: _ensure_tz(v) for k, v in data.items()}
+    if isinstance(data, (list, tuple)):
+        return [_ensure_tz(v) for v in data]
+    return data
 
 
 def success_response(
@@ -8,13 +20,13 @@ def success_response(
     message: str = "Success",
     code: int = 200,
 ) -> Dict:
-    """Standard JSON envelope for successful operations."""
+    data = _ensure_tz(data)
     return {
         "status": "success",
         "code": code,
         "message": message,
         "data": data,
-        "timestamp": __import__('app.helpers.date_helper', fromlist=['get_now_wib_aware']).get_now_wib_aware().isoformat(),
+        "timestamp": fmt_dt(get_now_wib_aware()),
     }
 
 
@@ -23,17 +35,15 @@ def error_response(
     code: int = 400,
     errors: Optional[List[Dict[str, str]]] = None,
 ) -> JSONResponse:
-    """Standard JSON envelope for error responses."""
     body: Dict[str, Any] = {
         "status": "error",
         "code": code,
         "message": message,
-        "timestamp": __import__('app.helpers.date_helper', fromlist=['get_now_wib_aware']).get_now_wib_aware().isoformat(),
+        "timestamp": fmt_dt(get_now_wib_aware()),
     }
     if errors:
-        body["errors"] = errors
-
-    return JSONResponse(status_code=code, content=body)
+        body["errors"] = _ensure_tz(errors)
+    return JSONResponse(status_code=code, content=body) 
 
 
 def paginated_response(

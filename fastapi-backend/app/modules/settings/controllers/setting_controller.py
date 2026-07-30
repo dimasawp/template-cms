@@ -57,8 +57,6 @@ async def get_raw_settings(
     db: Session = Depends(get_db),
     current_user: User = Depends(check_permission("settings.view"))
 ):
-    """Ambil list settings mentah (butuh akses Admin)"""
-    # Check role
     from sqlalchemy import text
     sql = text("SELECT LOWER(name) FROM roles WHERE id = :rid")
     res = db.execute(sql, {"rid": current_user.role_id}).fetchone()
@@ -66,7 +64,8 @@ async def get_raw_settings(
 
     group_filter = None if is_superadmin else "general"
     settings = SettingService.get_all(db, as_dict=False, group=group_filter)
-    return success_response(data=settings)
+    data = [SettingResponse.model_validate(s).model_dump() for s in settings]
+    return success_response(data=data)
 
 
 @router.put("/{key}")
@@ -94,7 +93,8 @@ async def update_setting(
         db, key, payload.setting_value, payload.description,
         user_id=current_user.id, request=request
     )
-    return success_response(data=setting, message=f"Setting '{key}' updated successfully")
+    data = SettingResponse.model_validate(setting).model_dump()
+    return success_response(data=data, message=f"Setting '{key}' updated successfully")
 
 
 @router.post("/reset")
@@ -143,4 +143,5 @@ async def bulk_update_settings(
                 }
             })
 
-    return success_response(data=settings, message="Settings updated successfully")
+    data = [SettingResponse.model_validate(s).model_dump() for s in settings]
+    return success_response(data=data, message="Settings updated successfully")

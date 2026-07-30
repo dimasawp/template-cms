@@ -199,8 +199,8 @@ async def get_active_sessions(
             "full_name": s.user.full_name,
             "ip_address": s.ip_address,
             "user_agent": s.user_agent,
-            "expires_at": s.expires_at.isoformat(),
-            "created_at": s.created_at.isoformat(),
+            "expires_at": s.expires_at,
+            "created_at": s.created_at,
         }
         for s in sessions
     ]

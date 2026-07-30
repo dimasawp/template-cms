@@ -18,6 +18,7 @@ import Badge from '@/components/ui/Badge.vue'
 import StatusIndicator from '@/components/ui/StatusIndicator.vue'
 import PopoverHeader from '@/components/ui/PopoverHeader.vue'
 import Popover from '@/components/ui/Popover.vue'
+import { formatWIB } from '@/helpers/dateHelper'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import DataTableToolbar from '@/components/common/DataTableToolbar.vue'
 import { 
@@ -420,7 +421,7 @@ onMounted(() => {
               <Badge :variant="post.status === 'PUBLISHED' ? 'success' : post.status === 'ARCHIVED' ? 'warning' : 'secondary'">{{ post.status }}</Badge>
             </td>
             <td class="px-6 py-3 hidden lg:table-cell text-xs text-muted-foreground text-left">
-              {{ new Date(post.created_at + 'Z').toLocaleString('en-US') }}
+              {{ formatWIB(post.created_at) }}
             </td>
             <td v-if="auth.hasPermission('posts.update') || auth.hasPermission('posts.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
               <div class="flex items-center justify-center gap-1">

@@ -8,6 +8,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import Button from '@/components/ui/Button.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
+import { formatWIB } from '@/helpers/dateHelper'
 import DataTableToolbar from '@/components/common/DataTableToolbar.vue'
 import { 
   Monitor, 
@@ -237,7 +238,7 @@ onMounted(fetchSessions)
           </div>
           <div class="flex justify-between items-center text-[11px]">
             <span class="text-muted-foreground font-medium uppercase tracking-wider">LOGIN TIME</span>
-            <span class="text-foreground font-medium">{{ new Date(s.created_at + 'Z').toLocaleString('en-US') }}</span>
+            <span class="text-foreground font-medium">{{ formatWIB(s.created_at) }}</span>
           </div>
         </div>
       </div>

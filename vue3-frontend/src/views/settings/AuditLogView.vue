@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import auditService from '@/services/auditService'
 import { useDataTable } from '@/composables/useDataTable'
+import { formatWIB } from '@/helpers/dateHelper'
 import { 
   Terminal, 
   Eye, 
@@ -14,8 +15,6 @@ import {
   Search,
   Globe
 } from 'lucide-vue-next'
-import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
 import Pagination from '@/components/common/Pagination.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import Button from '@/components/ui/Button.vue'
@@ -70,7 +69,7 @@ const hasActiveFilters = computed(() => {
 })
 
 const formatDateTime = (dateStr) => {
-  return format(new Date(dateStr), 'dd MMM yyyy, HH:mm:ss', { locale: id })
+  return formatWIB(dateStr)
 }
 
 const badgeVariantMap = {

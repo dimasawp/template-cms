@@ -198,8 +198,8 @@ class UserService(BaseService):
             "role_name": role.name if role else None,
             "avatar": user.avatar,
             "is_active": user.is_active,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            "created_at": user.created_at if user.created_at else None,
+            "updated_at": user.updated_at if user.updated_at else None,
         }
 
     @classmethod
@@ -214,7 +214,7 @@ class UserService(BaseService):
             "role_name": role.name if role else None,
             "avatar": user.avatar,
             "is_active": user.is_active,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
-            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+            "created_at": user.created_at if user.created_at else None,
+            "updated_at": user.updated_at if user.updated_at else None,
+            "last_login_at": user.last_login_at if user.last_login_at else None,
         }

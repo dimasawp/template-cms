@@ -1,18 +1,22 @@
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 
+WIB_TZ = timezone(timedelta(hours=7))
+
+
 def get_now_wib() -> datetime:
-    """
-    Returns current time in WIB (UTC+7).
-    Returns a naive datetime object suitable for MySQL DATETIME columns.
-    """
-    # Create timezone-aware UTC time, then convert to WIB, then make naive
-    wib_tz = timezone(timedelta(hours=7))
-    return datetime.now(timezone.utc).astimezone(wib_tz).replace(tzinfo=None)
+    return datetime.now(timezone.utc).astimezone(WIB_TZ).replace(tzinfo=None)
+
 
 def get_now_wib_aware() -> datetime:
-    """
-    Returns current time in WIB (UTC+7) as a timezone-aware object.
-    Suitable for ISO formatting in API responses.
-    """
-    wib_tz = timezone(timedelta(hours=7))
-    return datetime.now(timezone.utc).astimezone(wib_tz)
+    return datetime.now(timezone.utc).astimezone(WIB_TZ)
+
+
+def fmt_dt(dt: Optional[datetime]) -> Optional[str]:
+    """Serialize datetime to ISO-8601 with +07:00 offset.
+    Naive datetimes are assumed to be WIB."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=WIB_TZ).isoformat()
+    return dt.isoformat()

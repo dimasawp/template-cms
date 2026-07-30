@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { userService } from '@/services/userService'
 import PageHeader from '@/components/common/PageHeader.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import { formatWIB } from '@/helpers/dateHelper'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
@@ -384,10 +385,10 @@ async function handleDelete(user) {
               <StatusIndicator :active="u.is_active" />
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap text-left">
-              {{ u.created_at ? new Date(u.created_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ u.created_at ? formatWIB(u.created_at) : '—' }}
             </td>
             <td class="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap text-left">
-              {{ u.updated_at ? new Date(u.updated_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' }}
+              {{ u.updated_at ? formatWIB(u.updated_at) : '—' }}
             </td>
             <td v-if="auth.hasPermission('users.update') || auth.hasPermission('users.delete')" class="px-6 py-3 text-center border-l border-border/50 bg-muted/5">
               <div class="flex items-center justify-center gap-1">
@@ -478,7 +479,7 @@ async function handleDelete(user) {
                   Last Login
                 </div>
                 <p class="text-sm font-bold text-foreground bg-background/50 p-3 rounded-xl border border-border/30">
-                  {{ selectedUser.last_login_at ? new Date(selectedUser.last_login_at + 'Z').toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never logged in' }}
+                  {{ selectedUser.last_login_at ? formatWIB(selectedUser.last_login_at) : 'Never logged in' }}
                 </p>
               </div>
 
@@ -486,13 +487,13 @@ async function handleDelete(user) {
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Registered</Label>
                   <p class="text-xs font-bold text-foreground">
-                    {{ new Date(selectedUser.created_at + 'Z').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                    {{ formatWIB(selectedUser.created_at, { year: 'numeric', month: 'short', day: 'numeric' }) }}
                   </p>
                 </div>
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground font-black tracking-wider">Updated</Label>
                   <p class="text-xs font-bold text-foreground">
-                    {{ new Date(selectedUser.updated_at + 'Z').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                    {{ formatWIB(selectedUser.updated_at, { year: 'numeric', month: 'short', day: 'numeric' }) }}
                   </p>
                 </div>
               </div>

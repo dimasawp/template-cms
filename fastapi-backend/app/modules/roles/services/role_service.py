@@ -25,8 +25,8 @@ class RoleService(BaseService):
             ],
             "permission_count": len(role.permissions),
             "user_count": user_count,
-            "created_at": role.created_at.isoformat() if role.created_at else None,
-            "updated_at": role.updated_at.isoformat() if role.updated_at else None,
+            "created_at": role.created_at if role.created_at else None,
+            "updated_at": role.updated_at if role.updated_at else None,
         }
 
     @classmethod
