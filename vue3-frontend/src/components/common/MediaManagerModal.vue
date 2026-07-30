@@ -3,14 +3,16 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import Dialog from '@/components/ui/Dialog.vue'
 import Button from '@/components/ui/Button.vue'
 import { mediaService } from '@/services/mediaService'
-import { UploadCloud, File, Copy, Trash2, CheckCircle2, Search, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-vue-next'
+import { UploadCloud, File, Copy, Trash2, CheckCircle2, Search, Filter, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Eye, Info } from 'lucide-vue-next'
 import { notificationService } from '@/services/notificationService'
 import Popover from '@/components/ui/Popover.vue'
 import PopoverHeader from '@/components/ui/PopoverHeader.vue'
 import Label from '@/components/ui/Label.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import { useConfirmation } from '@/composables/useConfirmation'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const confirm = useConfirmation()
 
 const props = defineProps({
@@ -28,6 +30,7 @@ const total = ref(0)
 const loading = ref(false)
 const search = ref('')
 const filterType = ref('')
+const filterUserId = ref(null)
 const sortBy = ref('created_at')
 const sortOrder = ref('desc')
 const uploading = ref(false)
@@ -36,6 +39,7 @@ const fileInput = ref(null)
 const showUploadSuccess = ref(false)
 const uploadedFileUrl = ref('')
 const previewItem = ref(null)
+const detailItem = ref(null)
 
 const skip = ref(0)
 const limit = 24
@@ -51,12 +55,14 @@ const fetchMedia = async (append = false) => {
   }
 
   try {
-    const { data: res } = await mediaService.getAll({ 
+    const params = {
       skip: skip.value, limit: limit, search: search.value,
       file_type: filterType.value,
       sort_by: sortBy.value,
       sort_order: sortOrder.value
-    })
+    }
+    if (filterUserId.value) params.user_id = filterUserId.value
+    const { data: res } = await mediaService.getAll(params)
     
     if (append) {
       mediaItems.value = [...mediaItems.value, ...res.data.items]
@@ -253,6 +259,34 @@ const copyUploadedUrl = async () => {
                     </button>
                   </div>
                 </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                  <Label class="text-[10px] uppercase tracking-wider text-muted-foreground mb-2.5 block font-bold">Uploader</Label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button 
+                      @click="filterUserId = null; fetchMedia(false)"
+                      class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
+                      :class="[
+                        filterUserId === null
+                        ? 'bg-primary text-white border-primary shadow-md' 
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                      ]"
+                    >
+                      ALL
+                    </button>
+                    <button 
+                      @click="filterUserId = auth.user?.id; fetchMedia(false)"
+                      class="px-2 py-2 rounded-lg text-[10px] font-bold border transition-all"
+                      :class="[
+                        filterUserId === auth.user?.id
+                        ? 'bg-primary text-white border-primary shadow-md' 
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                      ]"
+                    >
+                      MY UPLOADS
+                    </button>
+                  </div>
+                </div>
               </div>
             </template>
           </Popover>
@@ -375,6 +409,14 @@ const copyUploadedUrl = async () => {
             >
               <Eye class="h-3.5 w-3.5" />
             </button>
+
+            <button 
+              @click.stop="detailItem = item" 
+              class="p-1.5 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-primary transition-colors"
+              title="Details"
+            >
+              <Info class="h-3.5 w-3.5" />
+            </button>
             
             <template v-if="mode === 'manage'">
               <button 
@@ -411,6 +453,9 @@ const copyUploadedUrl = async () => {
           <div class="flex flex-col">
             <h3 class="font-semibold truncate pr-4 text-foreground">{{ previewItem.original_name }}</h3>
             <span class="text-xs text-muted-foreground">{{ formatSize(previewItem.size) }}</span>
+            <span v-if="previewItem.user" class="text-xs text-muted-foreground/70 mt-0.5">
+              Uploaded by {{ previewItem.user.full_name || previewItem.user.username }}
+            </span>
           </div>
           <Button variant="outline" size="sm" @click="previewItem = null">Close Preview</Button>
         </div>
@@ -429,6 +474,33 @@ const copyUploadedUrl = async () => {
             <File class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p class="text-muted-foreground mb-4">Preview not available for this file type.</p>
             <Button @click="copyUrl(previewItem)">Copy Link to Download</Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Overlay -->
+      <div v-if="detailItem" class="absolute inset-0 z-[60] bg-background/95 rounded-xl flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b">
+          <h3 class="font-semibold text-foreground">File Details</h3>
+          <Button variant="outline" size="sm" @click="detailItem = null">Close</Button>
+        </div>
+        <div class="flex-1 overflow-auto p-4">
+          <div class="max-w-lg mx-auto space-y-3">
+            <div v-for="field in [
+              { label: 'Original Name', value: detailItem.original_name },
+              { label: 'File Name', value: detailItem.filename },
+              { label: 'Size', value: formatSize(detailItem.size) },
+              { label: 'MIME Type', value: detailItem.mime_type || '-' },
+              { label: 'Storage Mode', value: detailItem.storage_mode },
+              { label: 'Path', value: detailItem.path },
+              { label: 'Upload Date', value: new Date(detailItem.created_at).toLocaleString() },
+              { label: 'Uploader', value: detailItem.user ? (detailItem.user.full_name || detailItem.user.username) : '-' },
+            ]" :key="field.label"
+              class="flex items-start gap-4 py-2 border-b border-border/50 last:border-0"
+            >
+              <span class="text-xs font-medium text-muted-foreground w-28 shrink-0">{{ field.label }}</span>
+              <span class="text-xs text-foreground break-all">{{ field.value }}</span>
+            </div>
           </div>
         </div>
       </div>

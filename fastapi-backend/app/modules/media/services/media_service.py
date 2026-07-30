@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile
 from typing import Optional, List
 import os
@@ -56,9 +56,10 @@ class MediaService:
         search: Optional[str] = None,
         file_type: Optional[str] = None,
         sort_by: str = "created_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        user_id: Optional[int] = None
     ) -> tuple[int, list[Media]]:
-        query = db.query(Media).filter(Media.deleted_at == None)
+        query = db.query(Media).options(joinedload(Media.user)).filter(Media.deleted_at == None)
         
         if search:
             query = query.filter(Media.original_name.ilike(f"%{search}%"))
@@ -68,6 +69,9 @@ class MediaService:
                 query = query.filter(Media.mime_type.like("image/%"))
             elif file_type == "document":
                 query = query.filter(~Media.mime_type.like("image/%"))
+        
+        if user_id is not None:
+            query = query.filter(Media.user_id == user_id)
         
         # Sorting
         order_col = Media.id

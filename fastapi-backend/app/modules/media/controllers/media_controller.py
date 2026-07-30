@@ -68,13 +68,15 @@ async def get_all_media(
     file_type: str = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
+    user_id: int = None,
     db: Session = Depends(get_db),
     _current_user: User = Depends(check_permission("media.view"))
 ):
     """Get a list of all uploaded media (Requires media.view permission)."""
     total, items = MediaService.get_all_media(
         db, skip=skip, limit=limit, search=search, 
-        file_type=file_type, sort_by=sort_by, sort_order=sort_order
+        file_type=file_type, sort_by=sort_by, sort_order=sort_order,
+        user_id=user_id
     )
     return success_response(
         data={
@@ -90,7 +92,12 @@ async def get_all_media(
                     "size": item.size,
                     "mime_type": item.mime_type,
                     "storage_mode": item.storage_mode,
-                    "created_at": item.created_at
+                    "created_at": item.created_at,
+                    "user": {
+                        "id": item.user.id,
+                        "username": item.user.username,
+                        "full_name": item.user.full_name
+                    } if item.user else None
                 }
                 for item in items
             ]
