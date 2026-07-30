@@ -55,8 +55,8 @@ template-cms/
 cd fastapi-backend
 cp .env.example .env
 pip install -r requirements.txt
-python -m db.seeds.seed
-cd db && alembic upgrade head && cd ..
+python -m db.seeds.seed --sync
+alembic upgrade head
 
 # Frontend
 cd vue3-frontend

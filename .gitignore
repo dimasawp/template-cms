@@ -20,3 +20,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Ignore all contents of docs/plans folder
+docs/plans/*.md

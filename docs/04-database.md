@@ -11,19 +11,22 @@ Database configuration is in `app/core/config.py` (loaded from `.env`).
 Database-related files are consolidated under `fastapi-backend/db/`:
 
 ```
-fastapi-backend/db/
-├── alembic.ini                  # Alembic configuration
-├── migrations/                  # Alembic migration history
-│   ├── env.py                   # Alembic environment (imports all models)
-│   ├── script.py.mako           # Migration template
-│   └── versions/                # Migration revisions
-│       ├── 4539779c0812_initial_migration_fixed.py
-│       └── f1d9e8001da8_add_cms_models_fix.py
-├── seeds/
-│   └── seed.py                  # Master data seeder
-└── scripts/                     # One-off database scripts
-    ├── phase2_schema_update.py
-    └── migrate_settings_group.py
+fastapi-backend/
+├── alembic.ini                  # Alembic configuration (at project root)
+└── db/
+    ├── migrations/              # Alembic migration history
+    │   ├── env.py               # Alembic environment (imports all models)
+    │   ├── script.py.mako       # Migration template
+    │   └── versions/            # Migration revisions
+    │       ├── 4539779c0812_initial_migration_fixed.py
+    │       └── f1d9e8001da8_add_cms_models_fix.py
+    ├── seeds/
+    │   ├── __init__.py          # Upsert helpers (upsert_by_name, add_missing_permissions)
+    │   ├── data.py              # Pure data constants (SEED_ROLES, SEED_PERMISSIONS, etc.)
+    │   └── seed.py              # Master data seeder (CLI: --sync / --reset)
+    └── scripts/                 # One-off database scripts
+        ├── phase2_schema_update.py
+        └── migrate_settings_group.py
 ```
 
 ## Migrations with Alembic
@@ -33,11 +36,11 @@ fastapi-backend/db/
 After modifying a model, generate an auto-migration:
 
 ```bash
-cd fastapi-backend/db
+cd fastapi-backend
 alembic revision --autogenerate -m "describe_your_changes"
 ```
 
-**Important:** Before running, ensure all models are imported in `migrations/env.py` (lines 17-26). If you created a new model module, add it there:
+**Important:** Before running, ensure all models are imported in `db/migrations/env.py` (lines 17-26). If you created a new model module, add it there:
 
 ```python
 from app.modules.products.models.product_model import Product
@@ -46,7 +49,7 @@ from app.modules.products.models.product_model import Product
 ### Applying Migrations
 
 ```bash
-cd fastapi-backend/db
+cd fastapi-backend
 alembic upgrade head
 ```
 
@@ -66,49 +69,69 @@ alembic history          # Show migration history
 
 ## Seeding
 
-The seeder creates initial data: roles, permissions, users, and settings.
+The seeder creates initial data: roles, permissions, users, and settings. All operations use **idempotent upsert** patterns — existing data is never removed in sync mode.
+
+### CLI Flags
+
+| Flag | Description |
+|---|---|
+| `--sync` (default) | Idempotent sync — upserts missing records, never drops tables. Safe for all environments. |
+| `--reset` | Drops and recreates all tables before seeding. Confirmation prompt required. **Blocked in production** unless `--force` is also passed. |
 
 ### Running the Seeder
 
-**Local:**
+**Local (sync — safe):**
 ```bash
 cd fastapi-backend
-python -m db.seeds.seed
+python -m db.seeds.seed --sync
 ```
 
-**Docker:**
+**Local (reset — development only):**
 ```bash
-docker compose exec backend python -m db.seeds.seed
+cd fastapi-backend
+python -m db.seeds.seed --reset
 ```
 
-**Non-production** environments will drop and recreate all tables before seeding.
+**Docker (sync):**
+```bash
+docker compose exec backend python -m db.seeds.seed --sync
+```
+
+**Docker (reset):**
+```bash
+docker compose exec backend python -m db.seeds.seed --reset
+```
+
+> The seeder also runs automatically on container start (after `alembic upgrade head`) via the Dockerfile CMD.
 
 ### Adding New Permissions
 
-Edit `db/seeds/seed.py` → `seed_permissions()` function:
+Edit `db/seeds/data.py` — add entries to `SEED_PERMISSIONS`:
 
 ```python
-permissions = [
-    # ... existing permissions ...,
-    {"id": 23, "name": "products.view",   "description": "View products"},
-    {"id": 24, "name": "products.create", "description": "Create products"},
-    {"id": 25, "name": "products.update", "description": "Update products"},
-    {"id": 26, "name": "products.delete", "description": "Delete products"},
-]
+{"name": "products.view",   "description": "View products"},
+{"name": "products.create", "description": "Create products"},
+{"name": "products.update", "description": "Update products"},
+{"name": "products.delete", "description": "Delete products"},
 ```
 
-Then re-seed to add them to the database.
+Then add them to the `super_admin` role in `SEED_ROLE_PERMISSIONS`:
+
+```python
+"super_admin": ALL_PERMISSION_NAMES,  # auto-includes all
+```
+
+Re-seed with `--sync` to add them to the database without affecting existing data.
 
 ### Adding New Settings
 
-Edit `db/seeds/seed.py` → `seed_settings()` function:
+Edit `db/seeds/data.py` — add entries to `SEED_SETTINGS`:
 
 ```python
-settings_data = [
-    # ... existing settings ...,
-    {"setting_key": "my_setting", "setting_value": "default", "description": "My new setting"},
-]
+{"setting_key": "my_setting", "setting_value": "default", "description": "My new setting"},
 ```
+
+Re-seed with `--sync`. Existing settings (even if values were changed manually) will NOT be overwritten.
 
 ## Database Reset
 
@@ -118,8 +141,8 @@ settings_data = [
 # 1. Drop and recreate the database (MySQL)
 docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME"'
 
-# 2. Seed
-docker compose exec backend python -m db.seeds.seed
+# 2. Seed (reset mode drops & recreates tables)
+docker compose exec backend python -m db.seeds.seed --reset
 
 # 3. Stamp Alembic head
 docker compose exec backend alembic stamp head

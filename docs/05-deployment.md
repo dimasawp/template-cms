@@ -87,8 +87,8 @@ docker compose up -d
 # 1. Drop & recreate (uses $MYSQL_ROOT_PASSWORD and $DB_NAME from container env)
 docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME"'
 
-# 2. Seed
-docker compose exec backend python -m db.seeds.seed
+# 2. Seed (idempotent sync)
+docker compose exec backend python -m db.seeds.seed --sync
 
 # 3. Stamp Alembic
 docker compose exec backend alembic upgrade head
@@ -155,7 +155,7 @@ Loaded automatically into the `backend` container via `env_file: ./fastapi-backe
 - [ ] Use a managed MySQL/MariaDB service or dedicated DB container
 - [ ] Set up regular backups
 - [ ] Run `alembic upgrade head` as part of deployment process
-- [ ] Never run seed in production with `ENV=production` (it doesn't drop tables)
+- [ ] Only run seed with `--sync` in production (safe, never drops tables). `--reset` is blocked in production unless `--force` is passed.
 
 ### 3. Performance
 

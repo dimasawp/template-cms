@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from main import app
 from app.core.database import Base, get_db
+from app.modules.settings.models.setting_model import Setting
 from db.seeds.seed import seed_roles, seed_permissions, seed_role_permissions, seed_users, seed_settings
 
 # Use SQLite in-memory for fast testing
@@ -36,6 +37,10 @@ def db_engine():
         seed_role_permissions(db)
         seed_users(db)
         seed_settings(db)
+        db.flush()
+        setting = db.query(Setting).filter_by(setting_key="captcha_enabled").first()
+        if setting:
+            setting.setting_value = "false"
         db.commit()
     finally:
         db.close()

@@ -264,20 +264,22 @@ The module is auto-discovered if it's in the `app/modules/` directory and:
 
 ### Step 8: Add Permissions to Seeder
 
-**`db/seeds/seed.py`** — add to `seed_permissions()`:
+**`db/seeds/data.py`** — add entries to `SEED_PERMISSIONS`:
 ```python
-{"id": 23, "name": "products.view",   "description": "View products"},
-{"id": 24, "name": "products.create", "description": "Create products"},
-{"id": 25, "name": "products.update", "description": "Update products"},
-{"id": 26, "name": "products.delete", "description": "Delete products"},
+{"name": "products.view",   "description": "View products"},
+{"name": "products.create", "description": "Create products"},
+{"name": "products.update", "description": "Update products"},
+{"name": "products.delete", "description": "Delete products"},
 ```
 
-Re-seed: `python -m db.seeds.seed`
+Then add them to `super_admin` in `SEED_ROLE_PERMISSIONS` (or `ALL_PERMISSION_NAMES` auto-includes all).
+
+Re-seed: `python -m db.seeds.seed --sync`
 
 ### Step 9: Create Migration
 
 ```bash
-cd fastapi-backend/db
+cd fastapi-backend
 alembic revision --autogenerate -m "add_products_table"
 alembic upgrade head
 ```
@@ -330,7 +332,7 @@ Create page components under `src/views/products/` following the pattern of exis
 | 3 | Repository | `repositories/product_repository.py` |
 | 4 | Service (optional) | `services/product_service.py` |
 | 5 | Controller | `controllers/product_controller.py` |
-| 6 | Permission | `db/seeds/seed.py` — add permission entries |
+| 6 | Permission | `db/seeds/data.py` — add permission entries to `SEED_PERMISSIONS` |
 | 7 | Migration | Run `alembic revision --autogenerate` |
 | 8 | Module registration | `app/modules/__init__.py` or `app/core/extensions.py` |
 | 9 | Frontend service | `vue3-frontend/src/services/productService.js` |

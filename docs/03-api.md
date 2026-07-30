@@ -231,6 +231,15 @@ Public posts endpoint only returns `PUBLISHED` posts. The detail endpoint also a
 | Media | `/api/v1/media` | Yes (auth required) |
 | Notifications | `/api/v1/notifications` | Yes (auth required) |
 
+### CAPTCHA (`/api/v1/captcha`)
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/generate` | No | Generate a CAPTCHA image. Returns image (base64) and a token. |
+| POST | `/verify` | No | Verify a CAPTCHA code. Body: `{ "token": "...", "code": "..." }`. |
+
+The CAPTCHA is automatically integrated into login/register when `captcha_enabled` setting is `"true"` (toggle in Global Settings). The frontend uses `CaptchaInput.vue` component which calls `captchaService.generate()` on mount and `captchaService.verify()` on submit.
+
 ## WebSocket
 
 ```

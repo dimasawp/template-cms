@@ -41,8 +41,8 @@ cp .env.example .env        # Edit database credentials
 pip install -r requirements.txt
 
 # Database Setup
-python -m db.seeds.seed      # Initial tables & master data
-cd fastapi-backend/db && alembic upgrade head  # Apply latest migrations
+python -m db.seeds.seed --sync  # Idempotent seed (roles, permissions, users, settings)
+alembic upgrade head  # Apply latest migrations (from project root)
 cd ..
 
 # Run Server
@@ -79,12 +79,15 @@ If you want to completely empty the database and re-seed it with default data (e
 # 1. Drop and Recreate the database inside the MySQL container
 docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME"'
 
-# 2. Re-create all tables and insert default seed data (Super Admin & Settings)
-docker compose exec backend python -m db.seeds.seed
+# 2. Re-create all tables and insert default seed data
+docker compose exec backend python -m db.seeds.seed --reset
 
 # 3. Tell Alembic that the database is already up to date
 docker compose exec backend alembic stamp head
 ```
+
+> **Note:** Use `--sync` (default) for idempotent seeding — never drops tables, safe for staging/production.  
+> Use `--reset` to drop & recreate tables (development only — blocked in production unless `--force` is passed).
 
 ### Applying Code Changes (Rebuild)
 Because the application runs entirely inside Docker without code bind mounts in production/default setup, you must rebuild the containers when you edit the source code.
@@ -116,6 +119,7 @@ docker compose up -d --build public_frontend
 - **Media System**: Organized YYYY/MM storage with support for large file handling.
 - **Active Sessions**: Monitor and revoke active user sessions in real-time.
 - **Maintenance Mode**: One-click maintenance toggle with real-time broadcast to all users.
+- **CAPTCHA Protection**: Built-in CAPTCHA module for login/register forms with global toggle in Settings.
 
 ## 📖 Documentation
 - [Backend Deep-Dive](./fastapi-backend/README.md)

@@ -71,7 +71,7 @@ Database
 ### Modules List
 
 **Core Modules** (always active):
-- `auth`, `users`, `roles`, `settings`, `audit`, `dashboard`, `media`, `menus`, `notifications`
+- `auth`, `users`, `roles`, `settings`, `audit`, `dashboard`, `media`, `menus`, `notifications`, `captcha`
 
 **Extension Modules** (can be toggled via `extensions.py`):
 - `posts`, `categories`, `public`

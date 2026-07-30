@@ -31,15 +31,16 @@ tests/
 │   └── __init__.py
 └── integration/             # Integration tests (with DB)
     ├── test_auth.py
-    ├── test_users.py
-    ├── test_roles.py
-    ├── test_settings.py
-    ├── test_audit.py
+    ├── test_captcha.py
+    ├── test_categories.py
     ├── test_media.py
     ├── test_notifications.py
     ├── test_posts.py
-    ├── test_categories.py
-    └── test_public_api.py
+    ├── test_public_api.py
+    ├── test_roles.py
+    ├── test_seed.py
+    ├── test_settings.py
+    └── test_users.py
 ```
 
 ### Fixtures (conftest.py)

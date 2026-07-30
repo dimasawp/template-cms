@@ -36,11 +36,11 @@ Edit `.env` dan sesuaikan kredensial database Anda.
 ### 3. Setup Database (Migrasi & Seed)
 **Penting:** Selalu gunakan Alembic untuk sinkronisasi tabel.
 ```bash
-# Membuat tabel awal & master data
-python -m db.seeds.seed
+# Membuat tabel awal & master data (idempotent sync)
+python -m db.seeds.seed --sync
 
-# Menjalankan migrasi terbaru (dari folder db/)
-cd db && alembic upgrade head
+# Menjalankan migrasi terbaru
+alembic upgrade head
 ```
 
 ### 4. Jalankan Server
@@ -61,12 +61,12 @@ Setiap kali Anda mengubah model di `app/modules/.../models/`, ikuti langkah ini:
 
 1.  **Generate Migration**:
     ```bash
-    cd db && alembic revision --autogenerate -m "deskripsi_perubahan"
+    alembic revision --autogenerate -m "deskripsi_perubahan"
     ```
 2.  **Review**: Cek file baru di `db/migrations/versions/`.
 3.  **Apply**:
     ```bash
-    cd db && alembic upgrade head
+    alembic upgrade head
     ```
 
 ## 🔐 Keamanan & RBAC

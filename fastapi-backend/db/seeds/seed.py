@@ -1,142 +1,117 @@
+"""
+Database seeder.
+
+Usage:
+    python -m db.seeds.seed            # sync mode (default, safe)
+    python -m db.seeds.seed --sync     # explicit sync
+    python -m db.seeds.seed --reset    # reset (dev only, drops tables)
+    python -m db.seeds.seed --reset --force   # skip confirmation
+"""
+
+import argparse
+import sys
+
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+
 from app.modules.roles.models.role_model import Role, Permission
 from app.modules.users.models.user_model import User
 from app.modules.settings.models.setting_model import Setting
 from app.core.security import get_password_hash
+from app.core.config import settings
+
+from db.seeds.data import (
+    SEED_ROLES,
+    SEED_PERMISSIONS,
+    ALL_PERMISSION_NAMES,
+    SEED_ROLE_PERMISSIONS,
+    SEED_USERS,
+    SEED_SETTINGS,
+)
+from db.seeds import upsert_by_name, add_missing_permissions, confirm_or_abort
 
 
 # ==================== ROLES ====================
 
 def seed_roles(db: Session):
-    roles = [
-        {"id": 1, "name": "super_admin", "description": "Full system access"},
-        {"id": 2, "name": "admin", "description": "Administrative access"},
-    ]
-    for data in roles:
-        if not db.query(Role).filter_by(name=data["name"]).first():
-            db.add(Role(**data))
-    print("[OK] Roles seeded")
+    for data in SEED_ROLES:
+        upsert_by_name(db, Role, data["name"], {"description": data["description"]})
+    print("[OK] Roles synced")
 
 
 # ==================== PERMISSIONS ====================
 
 def seed_permissions(db: Session):
-    permissions = [
-        {"id": 1,  "name": "users.view",    "description": "View users"},
-        {"id": 2,  "name": "users.create",  "description": "Create users"},
-        {"id": 3,  "name": "users.update",  "description": "Update users"},
-        {"id": 4,  "name": "users.delete",  "description": "Delete users"},
-        {"id": 5,  "name": "roles.view",    "description": "View roles"},
-        {"id": 6,  "name": "roles.create",  "description": "Create roles"},
-        {"id": 7,  "name": "roles.update",  "description": "Update roles"},
-        {"id": 8,  "name": "roles.delete",  "description": "Delete roles"},
-        {"id": 9,  "name": "audit.view",    "description": "View audit logs"},
-        {"id": 10, "name": "notifications.view", "description": "View notifications"},
-        {"id": 11, "name": "settings.view",   "description": "View settings"},
-        {"id": 12, "name": "settings.update", "description": "Update settings"},
-        {"id": 13, "name": "sessions.view",   "description": "View active sessions"},
-        {"id": 14, "name": "sessions.delete", "description": "Revoke sessions (kick)"},
-        {"id": 15, "name": "categories.view",   "description": "View categories"},
-        {"id": 16, "name": "categories.create", "description": "Create categories"},
-        {"id": 17, "name": "categories.update", "description": "Update categories"},
-        {"id": 18, "name": "categories.delete", "description": "Delete categories"},
-        {"id": 19, "name": "posts.view",      "description": "View posts"},
-        {"id": 20, "name": "posts.create",    "description": "Create posts"},
-        {"id": 21, "name": "posts.update",    "description": "Update posts"},
-        {"id": 22, "name": "posts.delete",    "description": "Delete posts"},
-        {"id": 23, "name": "media.view",      "description": "View media files"},
-        {"id": 24, "name": "media.create",    "description": "Upload media files"},
-        {"id": 25, "name": "media.update",    "description": "Update media files"},
-        {"id": 26, "name": "media.delete",    "description": "Delete media files"},
-    ]
-    for data in permissions:
-        if not db.query(Permission).filter_by(name=data["name"]).first():
-            db.add(Permission(**data))
-    print("[OK] Permissions seeded")
+    for data in SEED_PERMISSIONS:
+        upsert_by_name(db, Permission, data["name"], {"description": data["description"]})
+    print("[OK] Permissions synced")
 
 
 # ==================== ROLE-PERMISSION MAPPING ====================
 
 def seed_role_permissions(db: Session):
     all_perms = db.query(Permission).all()
+    all_perms_by_name = {p.name: p for p in all_perms}
 
-    # Super Admin: ALL permissions
-    sa = db.query(Role).filter_by(name="super_admin").first()
-    if sa:
-        sa.permissions = []
-        db.flush()
-        sa.permissions = all_perms
-        print("[OK] Super Admin → all permissions")
+    for role_name, perm_names in SEED_ROLE_PERMISSIONS.items():
+        role = db.query(Role).filter_by(name=role_name).first()
+        if not role:
+            print(f"[SKIP] Role '{role_name}' not found, skipping permissions")
+            continue
 
-    # Admin: All except roles.delete and settings.update
-    admin = db.query(Role).filter_by(name="admin").first()
-    if admin:
-        admin.permissions = [
-            p for p in all_perms
-            if p.name not in ("roles.delete", "settings.update")
-        ]
-        print("[OK] Admin → restricted permissions")
+        if perm_names == "*":
+            target_perms = all_perms
+        else:
+            target_perms = [all_perms_by_name[n] for n in perm_names if n in all_perms_by_name]
 
-    print("[OK] Role-permissions assigned")
+        add_missing_permissions(db, role, target_perms)
+        print(f"[OK] Role '{role_name}' permissions synced")
 
 
 # ==================== USERS ====================
 
 def seed_users(db: Session):
-    # 1. Super Admin account
-    if not db.query(User).filter_by(username="superadmin").first():
-        sa_role = db.query(Role).filter_by(name="super_admin").first()
+    for u in SEED_USERS:
+        existing = db.query(User).filter_by(username=u["username"]).first()
+        if existing:
+            print(f"[SKIP] User '{u['username']}' already exists")
+            continue
+        role = db.query(Role).filter_by(name=u["role"]).first()
+        if not role:
+            print(f"[SKIP] Role '{u['role']}' not found, cannot create user '{u['username']}'")
+            continue
         db.add(User(
-            username="superadmin",
-            email="superadmin@example.com",
-            full_name="Super Administrator",
-            password_hash=get_password_hash("admin123"),
-            role_id=sa_role.id,
+            username=u["username"],
+            email=u["email"],
+            full_name=u["full_name"],
+            password_hash=get_password_hash(u["password"]),
+            role_id=role.id,
             is_active=True,
         ))
-        print("[OK] Super Admin created  →  superadmin / admin123")
-    else:
-        print("[SKIP] Super Admin already exists")
-
-    # 2. Admin account
-    if not db.query(User).filter_by(username="admin").first():
-        admin_role = db.query(Role).filter_by(name="admin").first()
-        db.add(User(
-            username="admin",
-            email="admin@example.com",
-            full_name="Administrator",
-            password_hash=get_password_hash("admin123"),
-            role_id=admin_role.id,
-            is_active=True,
-        ))
-        print("[OK] Admin created        →  admin / admin123")
-    else:
-        print("[SKIP] Admin already exists")
+        print(f"[OK] User '{u['username']}' created")
 
 
 # ==================== SETTINGS ====================
 
 def seed_settings(db: Session):
-    settings_data = [
-        {"setting_key": "app_name", "setting_value": "CMS Template", "description": "Application Name"},
-        {"setting_key": "maintenance_mode", "setting_value": "false", "description": "Maintenance Mode Toggle"},
-        {"setting_key": "registration_enabled", "setting_value": "true", "description": "Allow user self-registration"},
-        {"setting_key": "captcha_enabled", "setting_value": "false", "description": "CAPTCHA verification on login/register"},
-    ]
-    for data in settings_data:
-        if not db.query(Setting).filter_by(setting_key=data["setting_key"]).first():
-            db.add(Setting(**data))
-    print("[OK] Settings seeded")
+    for s in SEED_SETTINGS:
+        existing = db.query(Setting).filter_by(setting_key=s["setting_key"]).first()
+        if existing:
+            print(f"[SKIP] Setting '{s['setting_key']}' already exists (value kept)")
+            continue
+        db.add(Setting(
+            setting_key=s["setting_key"],
+            setting_value=s["setting_value"],
+            description=s["description"],
+        ))
+        print(f"[OK] Setting '{s['setting_key']}' created")
+    print("[OK] Settings synced")
 
 
-# ==================== RUNNER ====================
+# ==================== MODEL IMPORTS ====================
 
-def run():
-    from app.core.database import SessionLocal, engine, Base
-    from app.core.config import settings
-    from sqlalchemy import text
-
-    # Import all models so Base.metadata knows every table
+def _import_models():
+    """Import all models so Base.metadata is fully populated."""
     import app.modules.users.models.user_model               # noqa: F401
     import app.modules.roles.models.role_model                # noqa: F401
     import app.modules.notifications.models.notification_model  # noqa: F401
@@ -149,30 +124,55 @@ def run():
     import app.modules.posts.models.post_model                # noqa: F401
     import app.modules.captcha.models.captcha_model          # noqa: F401
 
-    print(f"\n{'='*50}")
-    print(f"  DATABASE SEEDER  (ENV={settings.ENV})")
-    print(f"{'='*50}\n")
 
-    # Non-production: wipe & recreate for clean sequential IDs
-    if settings.ENV != "production":
-        print("[SEED] Resetting database (truncate all)...")
-        with engine.begin() as conn:
-            if engine.dialect.name == "mysql":
-                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
-            elif engine.dialect.name == "sqlite":
-                conn.execute(text("PRAGMA foreign_keys = OFF;"))
+# ==================== DROP & CREATE ====================
 
-            Base.metadata.drop_all(bind=conn)
+def _reset_database():
+    """Drop all tables and recreate them. Only for development."""
+    from app.core.database import engine, Base
 
-            if engine.dialect.name == "mysql":
-                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
-            elif engine.dialect.name == "sqlite":
-                conn.execute(text("PRAGMA foreign_keys = ON;"))
-        print("[OK] All tables dropped — auto-increments reset\n")
+    print("[RESET] Dropping all tables...")
+    with engine.begin() as conn:
+        if engine.dialect.name == "mysql":
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+        elif engine.dialect.name == "sqlite":
+            conn.execute(text("PRAGMA foreign_keys = OFF;"))
 
-    print("[SEED] Creating tables...")
+        Base.metadata.drop_all(bind=conn)
+
+        if engine.dialect.name == "mysql":
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+        elif engine.dialect.name == "sqlite":
+            conn.execute(text("PRAGMA foreign_keys = ON;"))
+    print("[OK] All tables dropped\n")
+
+    print("[RESET] Creating tables...")
     Base.metadata.create_all(bind=engine)
     print("[OK] Tables ready\n")
+
+
+# ==================== RUNNER ====================
+
+def run(mode: str = "sync", force: bool = False):
+    _import_models()
+    from app.core.database import SessionLocal
+
+    print(f"\n{'='*50}")
+    print(f"  DATABASE SEEDER  (ENV={settings.ENV}, mode={mode})")
+    print(f"{'='*50}\n")
+
+    if mode == "reset":
+        if settings.ENV == "production" and not force:
+            print("[ABORT] Cannot reset database in production mode. Use --force to override.\n")
+            sys.exit(1)
+
+        if not force:
+            print("  WARNING: This will DELETE ALL DATA and re-insert seeds!")
+            if not confirm_or_abort("Are you sure you want to proceed?"):
+                print("[ABORT] Reset cancelled.\n")
+                return
+
+        _reset_database()
 
     db = SessionLocal()
     try:
@@ -184,14 +184,23 @@ def run():
         seed_settings(db)
         db.commit()
         print(f"\n{'='*50}")
-        print("  ✅  SEEDING COMPLETED SUCCESSFULLY")
+        print(f"  ✅  SEEDING COMPLETED SUCCESSFULLY (mode={mode})")
         print(f"{'='*50}\n")
     except Exception as e:
         db.rollback()
         print(f"\n[ERROR] Seeding failed: {e}")
+        raise
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="Database seeder")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--sync", action="store_true", help="Sync seed data only (default)")
+    group.add_argument("--reset", action="store_true", help="Drop all tables and reseed (dev only)")
+    parser.add_argument("--force", action="store_true", help="Skip confirmation prompts")
+    args = parser.parse_args()
+
+    mode = "reset" if args.reset else "sync"
+    run(mode=mode, force=args.force)
