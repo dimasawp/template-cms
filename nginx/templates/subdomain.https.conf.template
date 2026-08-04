@@ -1,0 +1,87 @@
+# =============================================================
+# Skenario A (Subdomain) — HTTPS (H2 self-signed / H3 LE)
+#   admin.${DOMAIN}   → admin SPA
+#   public.${DOMAIN}  → public SPA
+#   api.${DOMAIN}     → backend (API + WS + storage)
+# =============================================================
+
+# HTTP → HTTPS redirect
+server {
+    listen ${NGINX_HTTP_PORT};
+    server_name admin.${DOMAIN} public.${DOMAIN} api.${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen ${NGINX_HTTPS_PORT} ssl;
+    server_name admin.${DOMAIN};
+
+    ssl_certificate ${CERT_FILE};
+    ssl_certificate_key ${CERT_KEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    location / {
+        proxy_pass http://frontend:80;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    include /etc/nginx/snippets/proxy_common.conf;
+}
+
+server {
+    listen ${NGINX_HTTPS_PORT} ssl;
+    server_name public.${DOMAIN};
+
+    ssl_certificate ${CERT_FILE};
+    ssl_certificate_key ${CERT_KEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    location / {
+        proxy_pass http://public_frontend:80;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    include /etc/nginx/snippets/proxy_common.conf;
+}
+
+server {
+    listen ${NGINX_HTTPS_PORT} ssl;
+    server_name api.${DOMAIN};
+
+    ssl_certificate ${CERT_FILE};
+    ssl_certificate_key ${CERT_KEY};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    location / {
+        return 404;
+    }
+
+    include /etc/nginx/snippets/proxy_common.conf;
+}

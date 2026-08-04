@@ -170,33 +170,177 @@ Loaded automatically into the `backend` container via `env_file: ./fastapi-backe
 - [ ] Configure logging aggregation
 - [ ] Monitor slow queries
 
-### 5. Docker in Production
+### 5. Production (nginx Reverse Proxy)
 
-For production, prepare a separate `.env` (or `.env.prod`) and reference it:
+For production, use the dedicated `docker-compose.prod.yml` (standalone — does **not** reference the dev compose). It adds an **nginx** service that reverse-proxies the frontends and backend, plus optional MySQL container and certbot auto-renew.
+
+```
+template-cms/
+├── .env.prod.example     # (tracked) Production config template
+├── .env.prod             # (gitignored) Your real production config
+├── docker-compose.prod.yml
+├── nginx/                # Reverse proxy image
+├── scripts/
+│   ├── gen-selfsigned.sh # H2 — self-signed cert
+│   ├── init-letsencrypt.sh # H3 — Let's Encrypt first issuance
+│   └── backup-db.sh      # D1 — database backup + rotation
+└── ...
+```
+
+**Start (D1 — MySQL container):**
 
 ```bash
-docker compose --env-file .env.prod up -d --build
+cp .env.prod.example .env.prod
+# edit .env.prod
+docker compose --env-file .env.prod -f docker-compose.prod.yml --profile local-db up -d --build
 ```
 
-Or use a production override file:
+**Start (D2 — external/managed DB):** omit `--profile local-db` and set `DB_HOST`/`DB_PORT` in `.env.prod`.
 
-```yaml
-# docker-compose.prod.yml
-services:
-  backend:
-    build: ./fastapi-backend
-    restart: always
-    environment:
-      - ENV=production
-      - SECRET_KEY=${SECRET_KEY}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - CORS_ORIGINS=https://admin.yourdomain.com
+**Stop:** `docker compose --env-file .env.prod -f docker-compose.prod.yml down`
 
-  frontend:
-    build: ./vue3-frontend
-    environment:
-      - VITE_API_BASE_URL=https://api.yourdomain.com/api/v1
+**Project name:** fixed to `cms-prod` so it never collides with the dev compose.
+
+#### Common Commands (production)
+
+All commands target the prod compose. Plain `docker compose ...` (without `-f`) only touches the **dev** `docker-compose.yml` — it will **not** restart the prod nginx.
+
+```bash
+# Status & logs
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f --tail 100 nginx
+
+# Restart all services
+docker compose --env-file .env.prod -f docker-compose.prod.yml restart
+
+# Restart one service (e.g. nginx)
+docker compose --env-file .env.prod -f docker-compose.prod.yml restart nginx
+
+# Stop / remove containers (volumes db_data_prod & certbot_* KEEP data)
+docker compose --env-file .env.prod -f docker-compose.prod.yml down
+# Stop + delete all volumes/data (destructive — use carefully)
+docker compose --env-file .env.prod -f docker-compose.prod.yml down -v
 ```
+
+**Alias shortcut** (tambahkan ke `~/.bashrc` di server):
+
+```bash
+alias cms-up='docker compose --env-file .env.prod -f docker-compose.prod.yml --profile local-db up -d --build'
+alias cms-restart='docker compose --env-file .env.prod -f docker-compose.prod.yml restart'
+alias cms-down='docker compose --env-file .env.prod -f docker-compose.prod.yml down'
+alias cms-logs='docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f --tail 100'
+alias cms-ps='docker compose --env-file .env.prod -f docker-compose.prod.yml ps'
+```
+
+> Catatan profile: tambah `--profile local-db` kalau pakai D1 (MySQL container) dan `--profile letsencrypt` kalau pakai H3 (Let's Encrypt). Tanpa profile tersebut, service `db`/`certbot` tidak ikut dijalankan.
+
+#### Scenario A — Subdomains
+
+| Subdomain | Serves |
+|---|---|
+| `admin.${DOMAIN}` | Admin SPA |
+| `public.${DOMAIN}` | Public SPA |
+| `api.${DOMAIN}` | Backend API + WebSocket + storage |
+
+`SITE_MODE=subdomain`; frontends built with `VITE_BASE_PATH=/`. Set `ADMIN_VITE_BASE_PATH=/` and `PUBLIC_VITE_BASE_PATH=/` in `.env.prod`.
+
+#### Scenario B — Single Domain + Paths
+
+| Path | Serves |
+|---|---|
+| `/admin/` | Admin SPA |
+| `/public/` | Public SPA |
+| `/api/` | Backend API + WebSocket + storage |
+| `/` | Redirect → `/public/` |
+
+`SITE_MODE=single`; frontends built with path base. Set `ADMIN_VITE_BASE_PATH=/admin/` and `PUBLIC_VITE_BASE_PATH=/public/` in `.env.prod`.
+
+#### Scenario C — Staging on a Single Server
+
+Use ports instead of DNS: set `NGINX_HTTP_PORT=8080`, `NGINX_HTTPS_PORT=8443` in `.env.prod`. Everything else identical.
+
+#### HTTPS options
+
+| Option | Config | Setup |
+|---|---|---|
+| H1 — HTTP | `NGINX_HTTPS=false` | none |
+| H2 — self-signed | `NGINX_HTTPS=true` | `./scripts/gen-selfsigned.sh` |
+| H3 — Let's Encrypt | `NGINX_HTTPS=true` | `LE_EMAIL` + `./scripts/init-letsencrypt.sh`, run compose with `--profile letsencrypt` |
+
+Let's Encrypt renewal: certbot container runs `certbot renew` every 12h; nginx auto-reloads every 6h to pick up new certs.
+
+#### Database
+
+| Option | Config |
+|---|---|
+| D1 — MySQL container | `DB_HOST=db`, run with `--profile local-db` |
+| D2 — external/managed DB | `DB_HOST=<host>`, `DB_PORT=<port>`, omit `--profile local-db` |
+
+Backup (D1): `./scripts/backup-db.sh` → gzipped dumps in `./backups/`, auto-rotation (default 7 days).
+
+#### Environment Variables (`docker-compose.prod.yml`)
+
+| Variable | Default | Description |
+|---|---|---|
+| `SITE_MODE` | `single` | `subdomain` (A) or `single` (B) |
+| `NGINX_HTTPS` | `false` | `true` (H2/H3) or `false` (H1) |
+| `DOMAIN` | `localhost` | Primary domain |
+| `NGINX_HTTP_PORT` | `80` | Nginx HTTP port |
+| `NGINX_HTTPS_PORT` | `443` | Nginx HTTPS port |
+| `CERT_FILE` | `/etc/letsencrypt/live/${DOMAIN}/fullchain.pem` | Cert path (volume `certbot_certs`) |
+| `CERT_KEY` | `/etc/letsencrypt/live/${DOMAIN}/privkey.pem` | Key path |
+| `MYSQL_ROOT_PASSWORD` | `root` | MySQL root password (D1) |
+| `DB_HOST` | `db` | `db` (D1) or external host (D2) |
+| `DB_PORT` | `3306` | Database port |
+| `DB_USER` / `DB_PASSWORD` | — | Database credentials |
+| `DB_NAME` | `db_cms_template` | Database name |
+| `SECRET_KEY` | `CHANGE_ME...` | JWT secret (change!) |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed origins |
+| `VITE_API_BASE_URL` | `http://localhost:8000/api/v1` | API base used at build time |
+| `ADMIN_VITE_BASE_PATH` | `/` | Admin SPA base path |
+| `PUBLIC_VITE_BASE_PATH` | `/` | Public SPA base path |
+
+#### Runbook
+
+```bash
+# 1. Config
+cp .env.prod.example .env.prod && vim .env.prod
+
+# 2. First boot in HTTP mode (H1) so certs/ACME can be set up
+docker compose --env-file .env.prod -f docker-compose.prod.yml --profile local-db up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps   # all healthy?
+
+# 3a. H2 — self-signed
+./scripts/gen-selfsigned.sh
+
+# 3b. H3 — Let's Encrypt (DNS must point to the server first)
+LE_EMAIL=you@example.com ./scripts/init-letsencrypt.sh
+
+# 4. Enable HTTPS (H2/H3)
+#    .env.prod: NGINX_HTTPS=true  (+ LE: add --profile letsencrypt)
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+
+# 5. Verify
+curl -I http://${DOMAIN}/admin/          # 301 → https (H2/H3)
+curl -I https://${DOMAIN}/public/        # 200
+curl -I https://${DOMAIN}/api/v1/        # 200
+
+# 6. Daily ops
+./scripts/backup-db.sh                    # DB backup (cron this)
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f --tail 100
+```
+
+> On Windows with Docker in WSL, run `docker` commands and scripts inside the WSL distro (e.g. `wsl -d Ubuntu ./scripts/backup-db.sh`).
+
+#### Troubleshooting
+
+| Symptom | Cause / Fix |
+|---|---|
+| `nginx` exits at startup | `NGINX_HTTPS=true` but cert missing → run H2/H3 setup first |
+| H3 challenge fails | DNS not pointing to server yet; or port 80 blocked |
+| Login fails behind proxy | `CORS_ORIGINS` must match the real origin; backend runs with `--proxy-headers` |
+| WebSocket won't connect | Nginx must have the `Upgrade`/`Connection` headers (already in `snippets/proxy_common.conf`) |
+| Frontend blank / wrong API | `VITE_API_BASE_URL` / `VITE_BASE_PATH` are baked at **build time** → rebuild frontend |
 
 ### 6. CI/CD (Recommended)
 

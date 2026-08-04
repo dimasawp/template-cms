@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────
+# Production Compose (standalone — tidak butuh docker-compose.yml)
+#
+# Penggunaan:
+#   D1 (MySQL container):  docker compose --env-file .env.prod -f docker-compose.prod.yml --profile local-db up -d --build
+#   D2 (DB eksternal):     docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#   H3 (Let's Encrypt):    tambah --profile letsencrypt
+#
+# Project name khusus supaya tidak bentrok dengan compose dev.
+# ─────────────────────────────────────────────────────────────
+name: cms-prod
+
+services:
+  nginx:
+    build: ./nginx
+    container_name: cms_nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:${NGINX_HTTP_PORT:-80}"
+      - "${NGINX_HTTPS_PORT:-443}:${NGINX_HTTPS_PORT:-443}"
+    environment:
+      - SITE_MODE=${SITE_MODE:-single}            # subdomain (A) | single (B)
+      - NGINX_HTTPS=${NGINX_HTTPS:-false}         # true (H2/H3) | false (H1)
+      - DOMAIN=${DOMAIN:-localhost}
+      - NGINX_HTTP_PORT=${NGINX_HTTP_PORT:-80}
+      - NGINX_HTTPS_PORT=${NGINX_HTTPS_PORT:-443}
+      - CERT_FILE=${CERT_FILE:-/etc/letsencrypt/live/${DOMAIN}/fullchain.pem}
+      - CERT_KEY=${CERT_KEY:-/etc/letsencrypt/live/${DOMAIN}/privkey.pem}
+    volumes:
+      - ./storage:/var/www/storage:ro
+      - certbot_certs:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+      - public_frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:${NGINX_HTTP_PORT:-80}/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./fastapi-backend
+      dockerfile: Dockerfile
+    container_name: cms_backend
+    restart: unless-stopped
+    env_file: ./fastapi-backend/.env
+    environment:
+      - ENV=production
+      - DEBUG=false
+      - ENABLE_WEBSOCKETS=true
+      - DB_HOST=${DB_HOST:-db}                     # D1: db | D2: <host eksternal>
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-root}
+      - DB_NAME=${DB_NAME:-db_cms_template}
+      - SECRET_KEY=${SECRET_KEY:-CHANGE_ME_TO_RANDOM_SECRET_DOCKER}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - STORAGE_MODE=${STORAGE_MODE:-local_project}
+    command: >
+      sh -c "alembic upgrade head || echo 'Migrations failed or not configured';
+             python -m db.seeds.seed --sync || echo 'Seeding failed or not configured';
+             uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --proxy-headers"
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false          # D1 aktif hanya saat --profile local-db; D2 pakai DB eksternal
+    volumes:
+      - ./storage:/app/storage
+
+  frontend:
+    build:
+      context: ./vue3-frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+        VITE_BASE_PATH: ${ADMIN_VITE_BASE_PATH:-/}
+    container_name: cms_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  public_frontend:
+    build:
+      context: ./vue3-public-frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+        VITE_BASE_PATH: ${PUBLIC_VITE_BASE_PATH:-/}
+    container_name: cms_public_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # ── D1: MySQL container (aktif via --profile local-db) ──
+  db:
+    profiles: ["local-db"]
+    image: mysql:8.0
+    container_name: cms_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-db_cms_template}
+    volumes:
+      - db_data_prod:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER:-root}", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── H3: Let's Encrypt auto-renew (aktif via --profile letsencrypt) ──
+  certbot:
+    profiles: ["letsencrypt"]
+    image: certbot/certbot
+    container_name: cms_certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c 'trap exit TERM;
+      while :; do
+        certbot renew --webroot -w /var/www/certbot || true;
+        sleep 12h & wait $${!};
+      done;'
+
+volumes:
+  db_data_prod:
+  certbot_certs:
+  certbot_webroot:
